@@ -1,2 +1,2 @@
 # bootstrap-proxmox-k8s
-Golang CLI project that creates a k8s cluster based on inputs provided by user
+Golang CLI project that provisions resources based on provided terraform script and configures those resources based on provided ansible playbooks
