@@ -2,23 +2,18 @@ package main
 
 import (
 	"bufio"
-	"context"
+	"flag"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
-
-	"github.com/hashicorp/terraform-exec/tfexec"
-	"github.com/hashicorp/terraform-exec/tfinstall"
 )
 
-func clone_template_repos(cmd2 string, wg *sync.WaitGroup) {
+func clone_template_repos(path string, wg *sync.WaitGroup) {
 	cmd0 := "git"
 	cmd1 := "clone"
-	cmd := exec.Command(cmd0, cmd1, "https://github.com/Naman1997/"+cmd2)
+	cmd := exec.Command(cmd0, cmd1, "https://github.com/Naman1997/"+path)
 	_, err := cmd.Output()
 
 	if err != nil {
@@ -27,32 +22,43 @@ func clone_template_repos(cmd2 string, wg *sync.WaitGroup) {
 		return
 	}
 
-	fmt.Println("Finished cloning", cmd2)
+	fmt.Println("Finished cloning", path)
 	defer wg.Done()
 }
 
-func terraform_apply(path string) {
-	tmpDir, err := ioutil.TempDir("", "tfinstall")
+func terraform_init(path string, dir string) {
+	cmd0 := "terraform"
+	cmd1 := "-chdir=" + dir + "/" + path
+	cmd2 := "init"
+	cmd := exec.Command(cmd0, cmd1, cmd2)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("error creating temp dir: %s", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	execPath, err := tfinstall.Find(context.Background(), tfinstall.LatestVersion(tmpDir, false))
-	if err != nil {
-		log.Fatalf("error locating Terraform binary: %s", err)
-	}
-
-	tf, err := tfexec.NewTerraform(path, execPath)
-	if err != nil {
-		log.Fatalf("error running NewTerraform: %s", err)
+		fmt.Println("Error: Unable to execute init with terraform!")
+		os.Exit(1)
 	}
 
-	err = tf.Init(context.Background(), tfexec.Upgrade(true))
+	fmt.Println("INFO: Finished executing init stage", cmd.Stdin)
+}
+
+func terraform_apply(path string, dir string) {
+	cmd0 := "terraform"
+	cmd1 := "-chdir=" + dir + "/" + path
+	cmd2 := "apply"
+	cmd3 := "-auto-approve"
+	cmd := exec.Command(cmd0, cmd1, cmd2, cmd3)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("error running Init: %s", err)
+		fmt.Println("Error: Unable to create resources with terraform!")
+		os.Exit(1)
 	}
 
+	fmt.Println("INFO: Finished executing apply stage", cmd.Stdin)
 }
 
 func exists(path string) (bool, error) {
@@ -67,6 +73,8 @@ func exists(path string) (bool, error) {
 }
 
 func main() {
+	terraform_vars_file := flag.String("var-file", "", "Path to .tfvars file")
+	flag.Parse()
 	var wg sync.WaitGroup
 	var template bool = false
 	var terraform_repo string = "proxmox-terraform-template-k8s"
@@ -74,9 +82,12 @@ func main() {
 	fmt.Print("Clone and execute default proxmox template?[Y/N]")
 	input := bufio.NewScanner(os.Stdin)
 	input.Scan()
+	dir, _ := os.Getwd()
+
+	//Clone template repos
 	if strings.EqualFold(input.Text(), "Y") {
-		terraform_clone_exists, _ := exists("./" + terraform_repo)
-		ansible_clone_exists, _ := exists("./" + ansible_repo)
+		terraform_clone_exists, _ := exists(terraform_repo + "/")
+		ansible_clone_exists, _ := exists(ansible_repo + "/")
 		if !terraform_clone_exists {
 			wg.Add(1)
 			go clone_template_repos(terraform_repo, &wg)
@@ -93,13 +104,30 @@ func main() {
 		wg.Wait()
 	}
 
-	// if template {
-	// 	terraform_apply(terraform_repo)
-	// }
+	//Copy over .tfvars file if specified
+	if len(*terraform_vars_file) > 0 {
+		tfvars_exists, _ := exists(*terraform_vars_file)
+		fmt.Println(tfvars_exists)
+		if tfvars_exists {
+			fmt.Println("Copying .tfvars file over to the required folder")
+			cpCmd := exec.Command("cp", *terraform_vars_file, dir+"/"+terraform_repo+"/terraform.tfvars")
+			_ = cpCmd.Run()
+		} else {
+			fmt.Println("Error: Provided path not found!")
+			os.Exit(1)
+		}
+	}
+
+	//Initialize and apply with terraform
+	if template {
+		terraform_init(terraform_repo, dir)
+		terraform_apply(terraform_repo, dir)
+	}
 
 	if template {
 		fmt.Println("Execution completed for template!")
 	} else {
 		fmt.Println("Sorry, non-template execution is not yet supported")
+		os.Exit(1)
 	}
 }
