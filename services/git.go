@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"os/exec"
 	"regexp"
@@ -30,19 +31,25 @@ var (
 //fixme: Improve log messages. Say repo not provided if len(repo) == 0
 func CloneRepos(terraform_repo string, ansible_repo string) {
 	var wg sync.WaitGroup
-	terraform_exists, _ := Exists(FormatRepo(terraform_repo))
-	ansible_exists, _ := Exists(FormatRepo(ansible_repo))
+	terraform_exists, err := Exists(FormatRepo(terraform_repo))
+	if err != nil {
+		log.Fatalf("[ERROR] %v", err)
+	}
+	ansible_exists, err := Exists(FormatRepo(ansible_repo))
+	if err != nil {
+		log.Fatalf("[ERROR] %v", err)
+	}
 	if !terraform_exists && len(terraform_repo) > 0 {
 		wg.Add(1)
 		go clone_template_repos(terraform_repo, &wg)
 	} else {
-		fmt.Println("SKIP: Terraform template repo is already cloned!")
+		fmt.Println("[SKIP] Terraform template repo is already cloned!")
 	}
 	if !ansible_exists && len(ansible_repo) > 0 {
 		wg.Add(1)
 		go clone_template_repos(ansible_repo, &wg)
 	} else {
-		fmt.Println("SKIP: Ansible template repo is already cloned!")
+		fmt.Println("[SKIP] Ansible template repo is already cloned!")
 	}
 	wg.Wait()
 }
@@ -59,15 +66,15 @@ func clone_template_repos(path string, wg *sync.WaitGroup) {
 	_, err := cmd.Output()
 
 	if err != nil {
-		fmt.Println(err.Error())
 		defer wg.Done()
-		return
+		log.Fatalf("[ERROR] %v", err)
 	}
 
-	fmt.Println("Finished cloning", path)
+	fmt.Println("[INFO] Finished cloning", path)
 	defer wg.Done()
 }
 
+//Function from asaskevich/govalidator
 func IsURL(str string) bool {
 	if str == "" || utf8.RuneCountInString(str) >= maxURLRuneCount || len(str) <= minURLRuneCount || strings.HasPrefix(str, ".") {
 		return false

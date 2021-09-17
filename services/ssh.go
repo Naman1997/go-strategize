@@ -18,13 +18,13 @@ type Connection struct {
 func ConnectInsecure(username string, privateKey string, homedir string) (*Connection, error) {
 	key, err := ioutil.ReadFile(privateKey)
 	if err != nil {
-		log.Fatalf("Unable to read private key: %v", err)
+		log.Fatalf("[ERROR] %v", err)
 	}
 
 	// Create the Signer for this private key.
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		log.Fatalf("unable to parse private key: %v", err)
+		log.Fatalf("[ERROR] %v", err)
 	}
 
 	path := ".ssh/known_hosts"
@@ -51,7 +51,7 @@ func ConnectInsecure(username string, privateKey string, homedir string) (*Conne
 func (conn *Connection) SendCommands(cmds ...string) ([]byte, error) {
 	session, err := conn.NewSession()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[ERROR] %v", err)
 	}
 	defer session.Close()
 
@@ -69,7 +69,7 @@ func (conn *Connection) SendCommands(cmds ...string) ([]byte, error) {
 	cmd := strings.Join(cmds, "; ")
 	output, err := session.Output(cmd)
 	if err != nil {
-		return output, fmt.Errorf("failed to execute command '%s' on server: %v", cmd, err)
+		return output, fmt.Errorf("[ERROR] Failed to execute command '%s' on server: %v", cmd, err)
 	}
 
 	return output, err

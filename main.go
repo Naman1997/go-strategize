@@ -19,6 +19,12 @@ var (
 	response string = "N"
 )
 
+const (
+	base               string = "https://github.com/Naman1997/"
+	template_terraform string = "proxmox-terraform-template-k8s.git"
+	template_ansible   string = "cluster-management.git"
+)
+
 func main() {
 	usr, err := user.Current()
 	if err != nil {
@@ -26,8 +32,8 @@ func main() {
 	}
 	homedir := usr.HomeDir
 	terraform_vars_file_flag := flag.String("var-file", "", "Path to .tfvars file")
-	terraform_repo_flag := flag.String("terraform", "", "Link to your terraform repo")
-	ansible_repo_flag := flag.String("ansible", "", "Link to your ansible repo")
+	terraform_repo_flag := flag.String("terraform", "", "URL to your terraform repo")
+	ansible_repo_flag := flag.String("ansible", "", "URL to your ansible repo")
 
 	//Extract flag data
 	flag.Parse()
@@ -51,9 +57,8 @@ func main() {
 	//Clone terraform and ansible repos
 	if strings.EqualFold(response, "Y") {
 		template = true
-		base := "https://github.com/Naman1997/"
-		terraform_repo = base + "proxmox-terraform-template-k8s.git"
-		ansible_repo = base + "cluster-management.git"
+		terraform_repo = base + template_terraform
+		ansible_repo = base + template_ansible
 		services.CloneRepos(terraform_repo, ansible_repo)
 	} else if strings.EqualFold(response, "N") {
 
@@ -86,20 +91,20 @@ func main() {
 		if err != nil {
 			log.Fatalf("[ERROR] %v", err)
 		}
-		m := fmt.Sprintf("Copied %d bytes to "+newfile, bytes)
+		m := fmt.Sprintf("[INFO] Copied %d bytes to "+newfile, bytes)
 		fmt.Println(m)
 	}
 
 	// Initialize and apply with terraform
-	if template {
-		dir, err := os.Getwd()
-		if err != nil {
-			log.Fatalf("[ERROR] %v", err)
-		}
-		folder := services.FormatRepo(terraform_repo)
-		services.Terraform_init(folder, dir)
-		services.Terraform_apply(folder, dir)
-	}
+	// if template {
+	// 	dir, err := os.Getwd()
+	// 	if err != nil {
+	// 		log.Fatalf("[ERROR] %v", err)
+	// 	}
+	// 	folder := services.FormatRepo(terraform_repo)
+	// 	services.Terraform_init(folder, dir)
+	// 	services.Terraform_apply(folder, dir)
+	// }
 
 	// Attempt to SSH
 	// fixme: Refactor this section
@@ -119,9 +124,9 @@ func main() {
 	// fmt.Println(string(output))
 
 	if template {
-		fmt.Println("Execution completed for template!")
+		fmt.Println("[INFO] Execution completed for template!")
 	} else {
-		fmt.Println("Sorry, non-template execution is not yet supported")
+		fmt.Println("[ERROR] Sorry, non-template execution is not yet supported")
 		os.Exit(1)
 	}
 }
@@ -135,9 +140,9 @@ func templateCheck() *bufio.Scanner {
 
 func askRepoUrl(repotype string, valid bool) *bufio.Scanner {
 	if valid {
-		fmt.Print("[INPUT] What's your " + repotype + " repo URL?")
+		fmt.Println("[INPUT] What's your " + repotype + " repo URL?")
 	} else {
-		fmt.Print("[INPUT] Please provide a valid URL for " + repotype + ":")
+		fmt.Println("[INPUT] Please provide a valid URL for " + repotype + ":")
 	}
 
 	input := bufio.NewScanner(os.Stdin)
