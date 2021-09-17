@@ -5,7 +5,6 @@ import (
 
 	"io/ioutil"
 	"log"
-	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -16,7 +15,7 @@ type Connection struct {
 	*ssh.Client
 }
 
-func ConnectInsecure(username string, privateKey string) (*Connection, error) {
+func ConnectInsecure(username string, privateKey string, homedir string) (*Connection, error) {
 	key, err := ioutil.ReadFile(privateKey)
 	if err != nil {
 		log.Fatalf("Unable to read private key: %v", err)
@@ -28,11 +27,8 @@ func ConnectInsecure(username string, privateKey string) (*Connection, error) {
 		log.Fatalf("unable to parse private key: %v", err)
 	}
 
-	usr, _ := user.Current()
-	dir := usr.HomeDir
-
 	path := ".ssh/known_hosts"
-	path = filepath.Join(dir, path)
+	path = filepath.Join(homedir, path)
 	fmt.Println(path)
 
 	sshConfig := &ssh.ClientConfig{
