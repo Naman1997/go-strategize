@@ -1,21 +1,22 @@
-package ssh
+package services
 
 import (
 	"fmt"
 
 	"io/ioutil"
 	"log"
+	"os/user"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
-	kh "golang.org/x/crypto/ssh/knownhosts"
 )
 
 type Connection struct {
 	*ssh.Client
 }
 
-func Connect(user string, privateKey string) (*Connection, error) {
+func ConnectInsecure(username string, privateKey string) (*Connection, error) {
 	key, err := ioutil.ReadFile(privateKey)
 	if err != nil {
 		log.Fatalf("Unable to read private key: %v", err)
@@ -27,20 +28,22 @@ func Connect(user string, privateKey string) (*Connection, error) {
 		log.Fatalf("unable to parse private key: %v", err)
 	}
 
-	hostKeyCallback, err := kh.New("~/.ssh/known_hosts")
-	if err != nil {
-		log.Fatal("could not create hostkeycallback function: ", err)
-	}
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+
+	path := ".ssh/known_hosts"
+	path = filepath.Join(dir, path)
+	fmt.Println(path)
 
 	sshConfig := &ssh.ClientConfig{
-		User: user,
+		User: username,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		HostKeyCallback: hostKeyCallback,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	conn, err := ssh.Dial("tcp", "192.168.0.111:22", sshConfig)
+	conn, err := ssh.Dial("tcp", "192.168.0.105:22", sshConfig)
 	if err != nil {
 		return nil, err
 	}
