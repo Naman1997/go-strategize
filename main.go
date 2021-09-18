@@ -4,130 +4,164 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
 	"os"
-	"os/exec"
+	"os/user"
+	"path/filepath"
 	"strings"
-	"sync"
+
+	"github.com/Naman1997/go-stratergize/services"
+	"github.com/relex/aini"
 )
 
-func clone_template_repos(path string, wg *sync.WaitGroup) {
-	cmd0 := "git"
-	cmd1 := "clone"
-	cmd := exec.Command(cmd0, cmd1, "https://github.com/Naman1997/"+path)
-	_, err := cmd.Output()
+var (
+	template bool   = false
+	clone    bool   = true
+	response string = "N"
+)
 
-	if err != nil {
-		fmt.Println(err.Error())
-		defer wg.Done()
-		return
-	}
-
-	fmt.Println("Finished cloning", path)
-	defer wg.Done()
-}
-
-func terraform_init(path string, dir string) {
-	cmd0 := "terraform"
-	cmd1 := "-chdir=" + dir + "/" + path
-	cmd2 := "init"
-	cmd := exec.Command(cmd0, cmd1, cmd2)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		fmt.Println("Error: Unable to execute init with terraform!")
-		os.Exit(1)
-	}
-
-	fmt.Println("INFO: Finished executing init stage", cmd.Stdin)
-}
-
-func terraform_apply(path string, dir string) {
-	cmd0 := "terraform"
-	cmd1 := "-chdir=" + dir + "/" + path
-	cmd2 := "apply"
-	cmd3 := "-auto-approve"
-	cmd := exec.Command(cmd0, cmd1, cmd2, cmd3)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		fmt.Println("Error: Unable to create resources with terraform!")
-		os.Exit(1)
-	}
-
-	fmt.Println("INFO: Finished executing apply stage", cmd.Stdin)
-}
-
-func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
-}
+const (
+	base                   string = "https://github.com/Naman1997/"
+	template_terraform     string = "proxmox-terraform-template-k8s.git"
+	template_ansible       string = "cluster-management.git"
+	inventory_default_path string = "/proxmox-terraform-template-k8s/ansible/hosts"
+)
 
 func main() {
-	terraform_vars_file := flag.String("var-file", "", "Path to .tfvars file")
-	flag.Parse()
-	var wg sync.WaitGroup
-	var template bool = false
-	var terraform_repo string = "proxmox-terraform-template-k8s"
-	var ansible_repo string = "cluster-management"
-	fmt.Print("Clone and execute default proxmox template?[Y/N]")
-	input := bufio.NewScanner(os.Stdin)
-	input.Scan()
-	dir, _ := os.Getwd()
 
-	//Clone template repos
-	if strings.EqualFold(input.Text(), "Y") {
-		terraform_clone_exists, _ := exists(terraform_repo + "/")
-		ansible_clone_exists, _ := exists(ansible_repo + "/")
-		if !terraform_clone_exists {
-			wg.Add(1)
-			go clone_template_repos(terraform_repo, &wg)
-		} else {
-			fmt.Println("Skip: Terraform template repo is already cloned!")
+	//Get home dir
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatalf("[ERROR] %v", err)
+	}
+	homedir := usr.HomeDir
+
+	//Get flag inputs
+	terraform_vars_file_flag := flag.String("var-file", "", "Path to .tfvars file")
+	terraform_repo_flag := flag.String("terraform", "", "URL to your terraform repo")
+	ansible_repo_flag := flag.String("ansible", "", "URL to your ansible repo")
+	inventory_flag := flag.String("inventory", "", "Expected file path to your ansible inventory")
+	ssh_username_flag := flag.String("ssh-user", "root", "Username for SSH")
+	ssh_key_flag := flag.String("ssh-key", "~/.ssh/id_rsa", "Private key for SSH")
+
+	//Extract flag data
+	flag.Parse()
+	terraform_vars_file := *terraform_vars_file_flag
+	terraform_repo := *terraform_repo_flag
+	ansible_repo := *ansible_repo_flag
+	inventory_file := *inventory_flag
+	ssh_username := *ssh_username_flag
+	ssh_key := *ssh_key_flag
+
+	//Update clone flag if any of these flags are passed
+	if len(terraform_repo) > 0 || len(ansible_repo) > 0 || len(inventory_file) > 0 {
+		clone = false
+		fmt.Println("[INFO] Not using proxmox template for current execution")
+	}
+
+	//Check for template repos usage
+	if clone {
+		input := templateCheck()
+		for !strings.EqualFold(input.Text(), "Y") && !strings.EqualFold(input.Text(), "N") {
+			input = templateCheck()
 		}
-		if !ansible_clone_exists {
-			wg.Add(1)
-			go clone_template_repos(ansible_repo, &wg)
-		} else {
-			fmt.Println("Skip: Ansible template repo is already cloned!")
-		}
+		response = input.Text()
+	}
+
+	//Clone terraform and ansible repos
+	if strings.EqualFold(response, "Y") {
 		template = true
-		wg.Wait()
+		terraform_repo = base + template_terraform
+		ansible_repo = base + template_ansible
+		services.CloneRepos(terraform_repo, ansible_repo, homedir)
+	} else if strings.EqualFold(response, "N") {
+
+		//Make sure both repos are present
+		if len(terraform_repo) == 0 {
+			terraform_repo = askRepoUrl("terraform")
+		}
+		if len(ansible_repo) == 0 {
+			ansible_repo = askRepoUrl("ansible")
+		}
+
+		services.CloneRepos(terraform_repo, ansible_repo, homedir)
 	}
 
 	//Copy over .tfvars file if specified
-	if len(*terraform_vars_file) > 0 {
-		tfvars_exists, _ := exists(*terraform_vars_file)
-		fmt.Println(tfvars_exists)
-		if tfvars_exists {
-			fmt.Println("Copying .tfvars file over to the required folder")
-			cpCmd := exec.Command("cp", *terraform_vars_file, dir+"/"+terraform_repo+"/terraform.tfvars")
-			_ = cpCmd.Run()
-		} else {
-			fmt.Println("Error: Provided path not found!")
-			os.Exit(1)
+	vars, err := services.Exists(terraform_vars_file, homedir)
+	if err != nil {
+		log.Fatalf("[ERROR] [Invalid value for var-file flag] %v", err)
+	}
+	if vars {
+		if strings.Contains(terraform_vars_file, "~/") {
+			terraform_vars_file = filepath.Join(homedir, terraform_vars_file[2:])
 		}
+		newfile := services.FormatRepo(terraform_repo) + "terraform.tfvars"
+		bytes, err := services.Copy(terraform_vars_file, newfile)
+		if err != nil {
+			log.Fatalf("[ERROR] %v", err)
+		}
+		m := fmt.Sprintf("[INFO] Copied %d bytes to "+newfile, bytes)
+		fmt.Println(m)
 	}
 
-	//Initialize and apply with terraform
+	// Initialize and apply with terraform
+	dir, err := os.Getwd()
 	if template {
-		terraform_init(terraform_repo, dir)
-		terraform_apply(terraform_repo, dir)
+		if err != nil {
+			log.Fatalf("[ERROR] %v", err)
+		}
+		folder := services.FormatRepo(terraform_repo)
+		services.Terraform_init(folder, dir)
+		services.Terraform_apply(folder, dir)
 	}
 
+	//Validate ansible inventory exists
 	if template {
-		fmt.Println("Execution completed for template!")
+		inventory_file = dir + inventory_default_path
 	} else {
-		fmt.Println("Sorry, non-template execution is not yet supported")
+		inventory_file = services.HomeFix(inventory_file, homedir)
+	}
+	_, err = services.Exists(inventory_file, homedir)
+	if err != nil {
+		log.Fatalf("[ERROR] [Ansible inventory] %v", err)
+	}
+
+	// Parse the inventory and attempt to SSH into all your VMs
+	file, err := os.Open(inventory_file)
+	if err != nil {
+		log.Fatalf("[ERROR] %v", err)
+	}
+	inventoryReader := bufio.NewReader(file)
+	inventory, _ := aini.Parse(inventoryReader)
+
+	for _, h := range inventory.Groups["all"].Hosts {
+		services.ValidateConn(ssh_username, ssh_key, homedir, h.Vars["ansible_host"], h.Vars["ansible_port"])
+	}
+
+	//Exit
+	if template {
+		fmt.Println("[INFO] Execution completed for template!")
+	} else {
+		fmt.Println("[ERROR] Sorry, non-template execution is not yet supported")
 		os.Exit(1)
 	}
+}
+
+func templateCheck() *bufio.Scanner {
+	fmt.Print("[INPUT] Clone and execute default proxmox template?[y/N] ")
+	input := bufio.NewScanner(os.Stdin)
+	input.Scan()
+	return input
+}
+
+func askRepoUrl(repotype string) string {
+	fmt.Print("[INPUT] What's your " + repotype + " repo URL? ")
+	input := bufio.NewScanner(os.Stdin)
+	input.Scan()
+	response := input.Text()
+	if !services.IsURL(response) {
+		log.Fatal("[ERROR] [Invalid value for", repotype, "flag] ")
+	}
+	return response
 }
