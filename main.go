@@ -38,7 +38,10 @@ func main() {
 	terraform_vars_file_flag := flag.String("var-file", "", "Path to .tfvars file")
 	terraform_repo_flag := flag.String("terraform", "", "URL to your terraform repo")
 	ansible_repo_flag := flag.String("ansible", "", "URL to your ansible repo")
-	inventory_flag := flag.String("inventory", "", "Path to your ansible inventory")
+	inventory_flag := flag.String("inventory", "", "Expected file path to your ansible inventory")
+	// ssh_username_flag := flag.String("inventory", "root", "Username for SSH")
+	// ssh_key_flag := flag.String("ssh-key", "~/.ssh/id_rsa", "Private key for SSH")
+	// ssh_port_flag := flag.String("ssh-key", "22", "Node port for SSH")
 
 	//Extract flag data
 	flag.Parse()
@@ -46,6 +49,9 @@ func main() {
 	terraform_repo := *terraform_repo_flag
 	ansible_repo := *ansible_repo_flag
 	inventory := *inventory_flag
+	// ssh_username := *ssh_username_flag
+	// ssh_key := *ssh_key_flag
+	// ssh_port := *ssh_port_flag
 
 	//Update clone flag if any of these flags are passed
 	if len(terraform_repo) > 0 || len(ansible_repo) > 0 || len(inventory) > 0 {
@@ -76,12 +82,6 @@ func main() {
 		}
 		if len(ansible_repo) == 0 {
 			ansible_repo = askRepoUrl("ansible")
-		}
-
-		//Validate ansible inventory
-		_, err := services.Exists(inventory, homedir)
-		if err != nil {
-			log.Fatalf("[ERROR] [Invalid value for ansible flag] %v", err)
 		}
 
 		services.CloneRepos(terraform_repo, ansible_repo, homedir)
@@ -116,23 +116,17 @@ func main() {
 		services.Terraform_apply(folder, dir)
 	}
 
-	// Attempt to SSH
-	// fixme: Refactor this section
-	// ssh_username := flag.String("ssh-user", "naman", "Username for SSH")
-	// ssh_key := flag.String("ssh-key", "id_rsa", "Name of SSH private key")
-	// flag.Parse()
-	// conn, err := services.ConnectInsecure(*ssh_username, *ssh_key, homedir)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	//Validate ansible inventory exists
+	_, err = services.Exists(inventory, homedir)
+	if err != nil {
+		log.Fatalf("[ERROR] [Invalid value for ansible flag] %v", err)
+	}
 
-	// output, err := conn.SendCommands("echo 'INFO: SSH successful with: '", "hostname")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	// Attempt to SSH in all VMs
+	//fixme: Fix SSH attempt
+	// services.ValidateConn()
 
-	// fmt.Println(string(output))
-
+	//Exit
 	if template {
 		fmt.Println("[INFO] Execution completed for template!")
 	} else {

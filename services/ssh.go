@@ -15,7 +15,19 @@ type Connection struct {
 	*ssh.Client
 }
 
-func ConnectInsecure(username string, privateKey string, homedir string) (*Connection, error) {
+func ValidateConn(username string, privateKey string, homedir string, addr string, port string) {
+	conn, err := connectInsecure(username, privateKey, homedir, addr, port)
+	if err != nil {
+		log.Fatalf("[ERROR] [SSH Failure] %v", err)
+	}
+	output, err := conn.sendCommands("echo '[INFO] [SSH successful] Connected to `hostname`'")
+	if err != nil {
+		log.Fatalf("[ERROR] [SSH Failure] %v", err)
+	}
+	fmt.Println(string(output))
+}
+
+func connectInsecure(username string, privateKey string, homedir string, addr string, port string) (*Connection, error) {
 	key, err := ioutil.ReadFile(privateKey)
 	if err != nil {
 		log.Fatalf("[ERROR] %v", err)
@@ -39,7 +51,8 @@ func ConnectInsecure(username string, privateKey string, homedir string) (*Conne
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	conn, err := ssh.Dial("tcp", "192.168.0.105:22", sshConfig)
+	host := addr + ":" + port
+	conn, err := ssh.Dial("tcp", host, sshConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +61,7 @@ func ConnectInsecure(username string, privateKey string, homedir string) (*Conne
 
 }
 
-func (conn *Connection) SendCommands(cmds ...string) ([]byte, error) {
+func (conn *Connection) sendCommands(cmds ...string) ([]byte, error) {
 	session, err := conn.NewSession()
 	if err != nil {
 		log.Fatalf("[ERROR] %v", err)
