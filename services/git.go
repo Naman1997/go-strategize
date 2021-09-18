@@ -31,14 +31,8 @@ var (
 //fixme: Improve log messages. Say repo not provided if len(repo) == 0
 func CloneRepos(terraform_repo string, ansible_repo string) {
 	var wg sync.WaitGroup
-	terraform_exists, err := Exists(FormatRepo(terraform_repo))
-	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
-	}
-	ansible_exists, err := Exists(FormatRepo(ansible_repo))
-	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
-	}
+	terraform_exists, _ := Exists(FormatRepo(terraform_repo))
+	ansible_exists, _ := Exists(FormatRepo(ansible_repo))
 	if !terraform_exists && len(terraform_repo) > 0 {
 		wg.Add(1)
 		go clone_template_repos(terraform_repo, &wg)

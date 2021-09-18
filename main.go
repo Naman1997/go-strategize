@@ -34,15 +34,18 @@ func main() {
 	terraform_vars_file_flag := flag.String("var-file", "", "Path to .tfvars file")
 	terraform_repo_flag := flag.String("terraform", "", "URL to your terraform repo")
 	ansible_repo_flag := flag.String("ansible", "", "URL to your ansible repo")
+	inventory_flag := flag.String("inventory", "", "Path to your ansible inventory")
 
 	//Extract flag data
 	flag.Parse()
 	terraform_vars_file := *terraform_vars_file_flag
 	terraform_repo := *terraform_repo_flag
 	ansible_repo := *ansible_repo_flag
+	inventory := *inventory_flag
 
-	if len(terraform_repo) > 0 || len(ansible_repo) > 0 {
+	if len(terraform_repo) > 0 || len(ansible_repo) > 0 || len(inventory) > 0 {
 		clone = false
+		fmt.Println("[INFO] Not using proxmox template for current execution")
 	}
 
 	//Check for template repos usage
@@ -63,19 +66,20 @@ func main() {
 	} else if strings.EqualFold(response, "N") {
 
 		//Make sure both repos are present
-		if len(terraform_repo) > 0 {
-			terraform_repo = askRepoUrl("terraform", true).Text()
+		if len(terraform_repo) == 0 {
+			terraform_repo = askRepoUrl("terraform")
 		}
-		if len(ansible_repo) > 0 {
-			ansible_repo = askRepoUrl("ansible", true).Text()
+		if len(ansible_repo) == 0 {
+			ansible_repo = askRepoUrl("ansible")
 		}
 
-		//Validate both repo URLs
-		for !services.IsURL(terraform_repo) {
-			terraform_repo = askRepoUrl("terraform", false).Text()
+		//Validate ansible inventory
+		if strings.Contains(inventory, "~/") {
+			inventory = filepath.Join(homedir, inventory[2:])
 		}
-		for !services.IsURL(ansible_repo) {
-			ansible_repo = askRepoUrl("terraform", false).Text()
+		_, err := services.Exists(inventory)
+		if err != nil {
+			log.Fatalf("[ERROR] [Invalid value fpr ansible flag] %v", err)
 		}
 
 		services.CloneRepos(terraform_repo, ansible_repo)
@@ -138,14 +142,13 @@ func templateCheck() *bufio.Scanner {
 	return input
 }
 
-func askRepoUrl(repotype string, valid bool) *bufio.Scanner {
-	if valid {
-		fmt.Println("[INPUT] What's your " + repotype + " repo URL?")
-	} else {
-		fmt.Println("[INPUT] Please provide a valid URL for " + repotype + ":")
-	}
-
+func askRepoUrl(repotype string) string {
+	fmt.Println("[INPUT] What's your " + repotype + " repo URL?")
 	input := bufio.NewScanner(os.Stdin)
 	input.Scan()
-	return input
+	response := input.Text()
+	if !services.IsURL(response) {
+		log.Fatal("[ERROR] [Invalid value for", repotype, "flag] ")
+	}
+	return response
 }
