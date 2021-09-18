@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
-func Exists(path string) (bool, error) {
+func Exists(path string, homedir string) (bool, error) {
+	if strings.Contains(path, "~/") {
+		path = filepath.Join(homedir, path[2:])
+	}
 	_, err := os.Stat(path)
 	if err == nil && len(path) > 0 {
 		return true, nil

@@ -26,11 +26,15 @@ const (
 )
 
 func main() {
+
+	//Get home dir
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatalf("[ERROR] %v", err)
 	}
 	homedir := usr.HomeDir
+
+	//Get flag inputs
 	terraform_vars_file_flag := flag.String("var-file", "", "Path to .tfvars file")
 	terraform_repo_flag := flag.String("terraform", "", "URL to your terraform repo")
 	ansible_repo_flag := flag.String("ansible", "", "URL to your ansible repo")
@@ -43,6 +47,7 @@ func main() {
 	ansible_repo := *ansible_repo_flag
 	inventory := *inventory_flag
 
+	//Update clone flag if any of these flags are passed
 	if len(terraform_repo) > 0 || len(ansible_repo) > 0 || len(inventory) > 0 {
 		clone = false
 		fmt.Println("[INFO] Not using proxmox template for current execution")
@@ -62,7 +67,7 @@ func main() {
 		template = true
 		terraform_repo = base + template_terraform
 		ansible_repo = base + template_ansible
-		services.CloneRepos(terraform_repo, ansible_repo)
+		services.CloneRepos(terraform_repo, ansible_repo, homedir)
 	} else if strings.EqualFold(response, "N") {
 
 		//Make sure both repos are present
@@ -74,19 +79,20 @@ func main() {
 		}
 
 		//Validate ansible inventory
-		if strings.Contains(inventory, "~/") {
-			inventory = filepath.Join(homedir, inventory[2:])
-		}
-		_, err := services.Exists(inventory)
+		_, err := services.Exists(inventory, homedir)
 		if err != nil {
-			log.Fatalf("[ERROR] [Invalid value fpr ansible flag] %v", err)
+			log.Fatalf("[ERROR] [Invalid value for ansible flag] %v", err)
 		}
 
-		services.CloneRepos(terraform_repo, ansible_repo)
+		services.CloneRepos(terraform_repo, ansible_repo, homedir)
 	}
 
 	//Copy over .tfvars file if specified
-	if len(terraform_vars_file) > 0 {
+	vars, err := services.Exists(terraform_vars_file, homedir)
+	if err != nil {
+		log.Fatalf("[ERROR] [Invalid value for var-file flag] %v", err)
+	}
+	if vars {
 		if strings.Contains(terraform_vars_file, "~/") {
 			terraform_vars_file = filepath.Join(homedir, terraform_vars_file[2:])
 		}
@@ -100,22 +106,22 @@ func main() {
 	}
 
 	// Initialize and apply with terraform
-	// if template {
-	// 	dir, err := os.Getwd()
-	// 	if err != nil {
-	// 		log.Fatalf("[ERROR] %v", err)
-	// 	}
-	// 	folder := services.FormatRepo(terraform_repo)
-	// 	services.Terraform_init(folder, dir)
-	// 	services.Terraform_apply(folder, dir)
-	// }
+	if template {
+		dir, err := os.Getwd()
+		if err != nil {
+			log.Fatalf("[ERROR] %v", err)
+		}
+		folder := services.FormatRepo(terraform_repo)
+		services.Terraform_init(folder, dir)
+		services.Terraform_apply(folder, dir)
+	}
 
 	// Attempt to SSH
 	// fixme: Refactor this section
 	// ssh_username := flag.String("ssh-user", "naman", "Username for SSH")
 	// ssh_key := flag.String("ssh-key", "id_rsa", "Name of SSH private key")
 	// flag.Parse()
-	// conn, err := services.ConnectInsecure(*ssh_username, *ssh_key)
+	// conn, err := services.ConnectInsecure(*ssh_username, *ssh_key, homedir)
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }

@@ -29,10 +29,10 @@ var (
 )
 
 //fixme: Improve log messages. Say repo not provided if len(repo) == 0
-func CloneRepos(terraform_repo string, ansible_repo string) {
+func CloneRepos(terraform_repo string, ansible_repo string, homedir string) {
 	var wg sync.WaitGroup
-	terraform_exists, _ := Exists(FormatRepo(terraform_repo))
-	ansible_exists, _ := Exists(FormatRepo(ansible_repo))
+	terraform_exists, _ := Exists(FormatRepo(terraform_repo), homedir)
+	ansible_exists, _ := Exists(FormatRepo(ansible_repo), homedir)
 	if !terraform_exists && len(terraform_repo) > 0 {
 		wg.Add(1)
 		go clone_template_repos(terraform_repo, &wg)
