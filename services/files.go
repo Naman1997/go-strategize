@@ -9,14 +9,19 @@ import (
 )
 
 func Exists(path string, homedir string) (bool, error) {
-	if strings.Contains(path, "~/") {
-		path = filepath.Join(homedir, path[2:])
-	}
+	path = HomeFix(path, homedir)
 	_, err := os.Stat(path)
-	if err == nil && len(path) > 0 {
+	if err == nil {
 		return true, nil
 	}
 	return false, err
+}
+
+func HomeFix(path string, homedir string) string {
+	if strings.Contains(path, "~/") {
+		path = filepath.Join(homedir, path[2:])
+	}
+	return path
 }
 
 func Copy(src, dst string) (int64, error) {

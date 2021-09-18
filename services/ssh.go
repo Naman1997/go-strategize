@@ -5,7 +5,6 @@ import (
 
 	"io/ioutil"
 	"log"
-	"path/filepath"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
@@ -16,15 +15,16 @@ type Connection struct {
 }
 
 func ValidateConn(username string, privateKey string, homedir string, addr string, port string) {
+	privateKey = HomeFix(privateKey, homedir)
 	conn, err := connectInsecure(username, privateKey, homedir, addr, port)
 	if err != nil {
 		log.Fatalf("[ERROR] [SSH Failure] %v", err)
 	}
-	output, err := conn.sendCommands("echo '[INFO] [SSH successful] Connected to `hostname`'")
+	output, err := conn.sendCommands("echo '[INFO] Connected to' `hostname`")
 	if err != nil {
-		log.Fatalf("[ERROR] [SSH Failure] %v", err)
+		log.Fatalf("[ERROR] [SSH Failure] [%s] %v", addr, err)
 	}
-	fmt.Println(string(output))
+	fmt.Println(strings.TrimSuffix(string(output), "\n"))
 }
 
 func connectInsecure(username string, privateKey string, homedir string, addr string, port string) (*Connection, error) {
@@ -39,9 +39,8 @@ func connectInsecure(username string, privateKey string, homedir string, addr st
 		log.Fatalf("[ERROR] %v", err)
 	}
 
-	path := ".ssh/known_hosts"
-	path = filepath.Join(homedir, path)
-	fmt.Println(path)
+	path := "~/.ssh/known_hosts"
+	path = HomeFix(path, homedir)
 
 	sshConfig := &ssh.ClientConfig{
 		User: username,

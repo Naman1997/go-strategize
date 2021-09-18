@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/Naman1997/go-stratergize/services"
+	"github.com/relex/aini"
 )
 
 var (
@@ -20,9 +21,10 @@ var (
 )
 
 const (
-	base               string = "https://github.com/Naman1997/"
-	template_terraform string = "proxmox-terraform-template-k8s.git"
-	template_ansible   string = "cluster-management.git"
+	base                   string = "https://github.com/Naman1997/"
+	template_terraform     string = "proxmox-terraform-template-k8s.git"
+	template_ansible       string = "cluster-management.git"
+	inventory_default_path string = "/proxmox-terraform-template-k8s/ansible/hosts"
 )
 
 func main() {
@@ -39,22 +41,20 @@ func main() {
 	terraform_repo_flag := flag.String("terraform", "", "URL to your terraform repo")
 	ansible_repo_flag := flag.String("ansible", "", "URL to your ansible repo")
 	inventory_flag := flag.String("inventory", "", "Expected file path to your ansible inventory")
-	// ssh_username_flag := flag.String("inventory", "root", "Username for SSH")
-	// ssh_key_flag := flag.String("ssh-key", "~/.ssh/id_rsa", "Private key for SSH")
-	// ssh_port_flag := flag.String("ssh-key", "22", "Node port for SSH")
+	ssh_username_flag := flag.String("ssh-user", "root", "Username for SSH")
+	ssh_key_flag := flag.String("ssh-key", "~/.ssh/id_rsa", "Private key for SSH")
 
 	//Extract flag data
 	flag.Parse()
 	terraform_vars_file := *terraform_vars_file_flag
 	terraform_repo := *terraform_repo_flag
 	ansible_repo := *ansible_repo_flag
-	inventory := *inventory_flag
-	// ssh_username := *ssh_username_flag
-	// ssh_key := *ssh_key_flag
-	// ssh_port := *ssh_port_flag
+	inventory_file := *inventory_flag
+	ssh_username := *ssh_username_flag
+	ssh_key := *ssh_key_flag
 
 	//Update clone flag if any of these flags are passed
-	if len(terraform_repo) > 0 || len(ansible_repo) > 0 || len(inventory) > 0 {
+	if len(terraform_repo) > 0 || len(ansible_repo) > 0 || len(inventory_file) > 0 {
 		clone = false
 		fmt.Println("[INFO] Not using proxmox template for current execution")
 	}
@@ -106,8 +106,8 @@ func main() {
 	}
 
 	// Initialize and apply with terraform
+	dir, err := os.Getwd()
 	if template {
-		dir, err := os.Getwd()
 		if err != nil {
 			log.Fatalf("[ERROR] %v", err)
 		}
@@ -117,14 +117,27 @@ func main() {
 	}
 
 	//Validate ansible inventory exists
-	_, err = services.Exists(inventory, homedir)
+	if template {
+		inventory_file = dir + inventory_default_path
+	} else {
+		inventory_file = services.HomeFix(inventory_file, homedir)
+	}
+	_, err = services.Exists(inventory_file, homedir)
 	if err != nil {
-		log.Fatalf("[ERROR] [Invalid value for ansible flag] %v", err)
+		log.Fatalf("[ERROR] [Ansible inventory] %v", err)
 	}
 
-	// Attempt to SSH in all VMs
-	//fixme: Fix SSH attempt
-	// services.ValidateConn()
+	// Parse the inventory and attempt to SSH into all your VMs
+	file, err := os.Open(inventory_file)
+	if err != nil {
+		log.Fatalf("[ERROR] %v", err)
+	}
+	inventoryReader := bufio.NewReader(file)
+	inventory, _ := aini.Parse(inventoryReader)
+
+	for _, h := range inventory.Groups["all"].Hosts {
+		services.ValidateConn(ssh_username, ssh_key, homedir, h.Vars["ansible_host"], h.Vars["ansible_port"])
+	}
 
 	//Exit
 	if template {
@@ -136,14 +149,14 @@ func main() {
 }
 
 func templateCheck() *bufio.Scanner {
-	fmt.Print("[INPUT] Clone and execute default proxmox template?[y/N]")
+	fmt.Print("[INPUT] Clone and execute default proxmox template?[y/N] ")
 	input := bufio.NewScanner(os.Stdin)
 	input.Scan()
 	return input
 }
 
 func askRepoUrl(repotype string) string {
-	fmt.Println("[INPUT] What's your " + repotype + " repo URL?")
+	fmt.Print("[INPUT] What's your " + repotype + " repo URL? ")
 	input := bufio.NewScanner(os.Stdin)
 	input.Scan()
 	response := input.Text()
