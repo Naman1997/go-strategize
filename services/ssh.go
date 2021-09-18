@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"sync"
 
 	"io/ioutil"
 	"log"
@@ -14,7 +15,7 @@ type Connection struct {
 	*ssh.Client
 }
 
-func ValidateConn(username string, privateKey string, homedir string, addr string, port string) {
+func ValidateConn(username string, privateKey string, homedir string, addr string, port string, wg *sync.WaitGroup) {
 	privateKey = HomeFix(privateKey, homedir)
 	conn, err := connectInsecure(username, privateKey, homedir, addr, port)
 	if err != nil {
@@ -25,6 +26,7 @@ func ValidateConn(username string, privateKey string, homedir string, addr strin
 		log.Fatalf("[ERROR] [SSH Failure] [%s] %v", addr, err)
 	}
 	fmt.Println(strings.TrimSuffix(string(output), "\n"))
+	defer wg.Done()
 }
 
 func connectInsecure(username string, privateKey string, homedir string, addr string, port string) (*Connection, error) {

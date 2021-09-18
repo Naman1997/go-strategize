@@ -9,6 +9,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/Naman1997/go-stratergize/services"
 	"github.com/relex/aini"
@@ -18,6 +19,7 @@ var (
 	template bool   = false
 	clone    bool   = true
 	response string = "N"
+	wg       sync.WaitGroup
 )
 
 const (
@@ -127,17 +129,23 @@ func main() {
 		log.Fatalf("[ERROR] [Ansible inventory] %v", err)
 	}
 
-	// Parse the inventory and attempt to SSH into all your VMs
+	// Parse the inventory
 	file, err := os.Open(inventory_file)
 	if err != nil {
 		log.Fatalf("[ERROR] %v", err)
 	}
 	inventoryReader := bufio.NewReader(file)
-	inventory, _ := aini.Parse(inventoryReader)
-
-	for _, h := range inventory.Groups["all"].Hosts {
-		services.ValidateConn(ssh_username, ssh_key, homedir, h.Vars["ansible_host"], h.Vars["ansible_port"])
+	inventory, err := aini.Parse(inventoryReader)
+	if err != nil {
+		log.Fatalf("[ERROR] [Ansible inventory] %v", err)
 	}
+
+	//Attempt to SSH into all VMs
+	for _, h := range inventory.Groups["all"].Hosts {
+		wg.Add(1)
+		services.ValidateConn(ssh_username, ssh_key, homedir, h.Vars["ansible_host"], h.Vars["ansible_port"], &wg)
+	}
+	wg.Wait()
 
 	//Exit
 	if template {
