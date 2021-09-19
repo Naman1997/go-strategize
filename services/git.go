@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -31,15 +32,15 @@ var (
 //fixme: Improve log messages. Say repo not provided if len(repo) == 0
 func CloneRepos(terraform_repo string, ansible_repo string, homedir string) {
 	var wg sync.WaitGroup
-	terraform_exists, _ := Exists(FormatRepo(terraform_repo), homedir)
-	ansible_exists, _ := Exists(FormatRepo(ansible_repo), homedir)
-	if !terraform_exists && len(terraform_repo) > 0 {
+	_, terraform_exists := os.Stat(FormatRepo(terraform_repo))
+	_, ansible_exists := os.Stat(FormatRepo(ansible_repo))
+	if terraform_exists != nil && len(terraform_repo) > 0 {
 		wg.Add(1)
 		go clone_template_repos(terraform_repo, &wg)
 	} else {
 		fmt.Println("[SKIP] Terraform template repo is already cloned!")
 	}
-	if !ansible_exists && len(ansible_repo) > 0 {
+	if ansible_exists != nil && len(ansible_repo) > 0 {
 		wg.Add(1)
 		go clone_template_repos(ansible_repo, &wg)
 	} else {

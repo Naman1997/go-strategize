@@ -3,18 +3,18 @@ package services
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-func Exists(path string, homedir string) (bool, error) {
-	path = HomeFix(path, homedir)
+func Exists(path string, homedir string) bool {
 	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
+	if err != nil {
+		log.Fatalf("[ERROR] %v", err)
 	}
-	return false, err
+	return true
 }
 
 func HomeFix(path string, homedir string) string {
@@ -47,4 +47,28 @@ func Copy(src, dst string) (int64, error) {
 	defer destination.Close()
 	nBytes, err := io.Copy(destination, source)
 	return nBytes, err
+}
+
+func Validate(path string, homedir string) string {
+	path = HomeFix(path, homedir)
+	_ = Exists(path, homedir)
+	return path
+}
+
+func ReadFiles(searchDir string) ([]string, error) {
+	fileList := make([]string, 0)
+	e := filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
+		fileList = append(fileList, path)
+		return err
+	})
+
+	if e != nil {
+		panic(e)
+	}
+
+	for _, file := range fileList {
+		fmt.Println(file)
+	}
+
+	return fileList, nil
 }
