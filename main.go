@@ -9,7 +9,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/Naman1997/go-stratergize/services"
 	"github.com/relex/aini"
@@ -19,7 +18,7 @@ var (
 	template bool   = false
 	clone    bool   = true
 	response string = "N"
-	wg       sync.WaitGroup
+	strict   bool   = true
 )
 
 const (
@@ -45,6 +44,7 @@ func main() {
 	inventory_flag := flag.String("inventory", "", "Expected file path to your ansible inventory")
 	ssh_username_flag := flag.String("ssh-user", "root", "Username for SSH")
 	ssh_key_flag := flag.String("ssh-key", "~/.ssh/id_rsa", "Private key for SSH")
+	ssh_strict_flag := flag.Bool("strict", true, "Private key for SSH")
 
 	//Extract flag data
 	flag.Parse()
@@ -54,11 +54,12 @@ func main() {
 	inventory_file := *inventory_flag
 	ssh_username := *ssh_username_flag
 	ssh_key := *ssh_key_flag
+	strict := *ssh_strict_flag
 
 	//Update clone flag if any of these flags are passed
 	if len(terraform_repo) > 0 || len(ansible_repo) > 0 || len(inventory_file) > 0 {
 		clone = false
-		fmt.Println("[INFO] Not using proxmox template for current execution")
+		fmt.Println("[WARN] Not using templates for current execution")
 	}
 
 	//Check for template repos usage
@@ -142,10 +143,10 @@ func main() {
 
 	//Attempt to SSH into all VMs
 	for _, h := range inventory.Groups["all"].Hosts {
-		wg.Add(1)
-		services.ValidateConn(ssh_username, ssh_key, homedir, h.Vars["ansible_host"], h.Vars["ansible_port"], &wg)
+		services.ValidateConn(ssh_username, ssh_key, homedir, h.Vars["ansible_host"], h.Vars["ansible_port"], strict)
 	}
-	wg.Wait()
+
+	//Execute all ansible playbooks in the provided folder
 
 	//Exit
 	if template {

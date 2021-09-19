@@ -20,7 +20,7 @@ func Terraform_init(path string, dir string) {
 		log.Fatalf("[ERROR] %v", err)
 	}
 
-	fmt.Println("[INFO] Finished executing init stage")
+	fmt.Println("[INFO] Finished executing terraform init")
 }
 
 func Terraform_apply(path string, dir string) {
@@ -37,5 +37,5 @@ func Terraform_apply(path string, dir string) {
 		log.Fatalf("[ERROR] %v", err)
 	}
 
-	fmt.Println("[INFO] Finished executing apply stage")
+	fmt.Println("[INFO] Finished executing terraform apply")
 }
