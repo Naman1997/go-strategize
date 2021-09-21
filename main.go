@@ -3,9 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/user"
 	"strings"
@@ -37,14 +35,14 @@ func main() {
 	//Get home dir
 	usr, err := user.Current()
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		services.ColorPrint(services.ERROR, "%v", err)
 	}
 	homedir := usr.HomeDir
 
 	//Get working dir
 	dir, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		services.ColorPrint(services.ERROR, "%v", err)
 	}
 
 	//Get flag inputs
@@ -77,7 +75,7 @@ func main() {
 	//Update clone flag if any of these flags are passed
 	if len(terraform_repo) > 0 || len(ansible_repo) > 0 || (len(inventory_file) > 0 && inventory_file != default_ansible_inventory) {
 		clone = false
-		fmt.Println("[WARN] Not using templates for current execution")
+		services.ColorPrint(services.WARN, "Not using templates for current execution")
 	}
 
 	//Check for template repos usage
@@ -119,12 +117,11 @@ func main() {
 			terraform_vars_file = services.Validate(terraform_vars_file, homedir)
 			bytes, err := services.Copy(terraform_vars_file, newfile)
 			if err != nil {
-				log.Fatalf("[ERROR] %v", err)
+				services.ColorPrint(services.ERROR, "%v", err)
 			}
-			m := fmt.Sprintf("[INFO] Copied %d bytes to "+newfile, bytes)
-			fmt.Println(m)
+			services.ColorPrint(services.INFO, "Copied %d bytes to "+newfile, bytes)
 		} else {
-			fmt.Println("[SKIP] tfvars have already been copied!")
+			services.ColorPrint(services.WARN, "tfvars have already been copied!")
 		}
 	}
 
@@ -149,7 +146,8 @@ func main() {
 		}
 		ansible_playbooks = strings.TrimSuffix(ansible_playbooks, "/") + "/"
 	} else {
-		log.Fatalf("[ERROR] No such file or directory: %v", ansible_playbooks)
+		services.ColorPrint(services.ERROR, "No such file or directory: %v", ansible_playbooks)
+
 	}
 
 	// Initialize and apply with terraform
@@ -169,12 +167,12 @@ func main() {
 	// Parse the inventory
 	file, err := os.Open(inventory_file)
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		services.ColorPrint(services.ERROR, "%v", err)
 	}
 	inventoryReader := bufio.NewReader(file)
 	inventory, err := aini.Parse(inventoryReader)
 	if err != nil {
-		log.Fatalf("[ERROR] [Ansible inventory] %v", err)
+		services.ColorPrint(services.ERROR, "%v", err)
 	}
 
 	//Attempt to SSH into all VMs
@@ -186,34 +184,35 @@ func main() {
 	services.Ansible_galaxy(ansible_requirements)
 	files, err := ioutil.ReadDir(ansible_playbooks)
 	if err != nil {
-		log.Fatal(err)
+		services.ColorPrint(services.ERROR, "%v", err)
 	}
 
 	for _, file := range files {
 		if strings.Contains(file.Name(), ".yaml") || strings.Contains(file.Name(), ".yml") {
 			services.Ansible_playbook(ansible_playbooks+file.Name(), inventory_file, ansible_vars, ssh_username)
+			services.ColorPrint(services.INFO, "Executing ansible playbook: %s", file.Name())
 		}
 	}
-	fmt.Println("[INFO] Finished executing ansible playbook(s)")
+	services.ColorPrint(services.INFO, "Finished executing ansible playbook(s)")
 
 	//Finish execution
-	fmt.Println("[INFO] Execution completed for template!")
+	services.ColorPrint(services.INFO, "Execution completed for template!")
 }
 
 func templateCheck() *bufio.Scanner {
-	fmt.Print("[INPUT] Clone and execute default proxmox template?[y/N] ")
+	services.ColorPrint(services.INPUT, "Clone and execute default proxmox template?[y/N] ")
 	input := bufio.NewScanner(os.Stdin)
 	input.Scan()
 	return input
 }
 
 func askRepoUrl(repotype string) string {
-	fmt.Print("[INPUT] What's your " + repotype + " repo URL? ")
+	services.ColorPrint(services.INPUT, "What's your "+repotype+" repo URL? ")
 	input := bufio.NewScanner(os.Stdin)
 	input.Scan()
 	response := input.Text()
 	if !services.IsURL(response) {
-		log.Fatal("[ERROR] [Invalid value for", repotype, "repo] ")
+		services.ColorPrint(services.ERROR, "[Invalid value for "+repotype+" repo]")
 	}
 	return response
 }

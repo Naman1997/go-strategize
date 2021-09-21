@@ -3,28 +3,27 @@ package services
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/fatih/color"
 )
 
+const (
+	ERROR = "[ERROR] "
+	WARN  = "[WARNING] "
+	INPUT = "[INPUT] "
+	INFO  = "[INFO] "
+)
+
 func ColorPrint(colorText string, text string, option ...interface{}) {
-
-	green := color.New(color.FgGreen).PrintfFunc()
-	red := color.New(color.FgRed).PrintfFunc()
-	yellow := color.New(color.FgYellow).PrintfFunc()
-	blue := color.New(color.FgBlue).PrintfFunc()
-
-	if strings.Contains(colorText, "ERROR") {
-		red(colorText)
-		fmt.Printf(text, option...)
+	if colorText == ERROR {
+		fmt.Printf(color.RedString(colorText)+text, option...)
 		os.Exit(1)
-	} else if strings.Contains(colorText, "INFO") {
-		green(colorText)
-	} else if strings.Contains(colorText, "WARNING") {
-		yellow(colorText)
-	} else if strings.Contains(colorText, "INPUT") {
-		blue(colorText)
+	} else if colorText == INFO {
+		fmt.Printf(color.GreenString(colorText))
+	} else if colorText == WARN {
+		fmt.Printf(color.YellowString(colorText))
+	} else if colorText == INPUT {
+		fmt.Printf(color.BlueString(colorText))
 	} else {
 		fmt.Printf(colorText+text, option...)
 		fmt.Println()
@@ -32,5 +31,7 @@ func ColorPrint(colorText string, text string, option ...interface{}) {
 	}
 
 	fmt.Printf(text, option...)
-	fmt.Println()
+	if colorText != INPUT {
+		fmt.Println()
+	}
 }

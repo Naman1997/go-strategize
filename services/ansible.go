@@ -1,10 +1,9 @@
 package services
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func Ansible_galaxy(requirements string) {
@@ -19,10 +18,10 @@ func Ansible_galaxy(requirements string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		ColorPrint(ERROR, "%v", err)
 	}
 
-	fmt.Println("[INFO] Finished installing ansible requirements")
+	ColorPrint(INFO, "Finished installing ansible requirements")
 }
 
 func Ansible_playbook(playbook string, inventory string, vars string, user string) {
@@ -36,24 +35,26 @@ func Ansible_playbook(playbook string, inventory string, vars string, user strin
 	if len(vars) > 0 {
 		cmd6 := "-e"
 		cmd7 := "@" + vars
-		fmt.Println("[INFO] Executing: ", cmd0, cmd1, cmd2, cmd3, cmd4, cmd5, cmd6, cmd7)
+		command := []string{cmd0, cmd1, cmd2, cmd3, cmd4, cmd5, cmd6, cmd7}
+		ColorPrint(INFO, "Executing: "+strings.Join(command, " "))
 		cmd := exec.Command(cmd0, cmd1, cmd2, cmd3, cmd4, cmd5, cmd6, cmd7)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 		if err != nil {
-			log.Fatalf("[ERROR] %v", err)
+			ColorPrint(ERROR, "%v", err)
 		}
 	} else {
-		fmt.Println("[INFO] Executing: ", cmd0, cmd1, cmd2, cmd3, cmd4, cmd5)
+		command := []string{cmd0, cmd1, cmd2, cmd3, cmd4, cmd5}
+		ColorPrint(INFO, "Executing: "+strings.Join(command, " "))
 		cmd := exec.Command(cmd0, cmd1, cmd2, cmd3, cmd4, cmd5)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 		if err != nil {
-			log.Fatalf("[ERROR] %v", err)
+			ColorPrint(ERROR, "%v", err)
 		}
 	}
 }
