@@ -11,49 +11,55 @@ import (
 )
 
 const (
-	IP              string = `(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))`
-	URLSchema       string = `((ftp|tcp|udp|wss?|https?):\/\/)`
-	URLUsername     string = `(\S+(:\S*)?@)`
-	URLPath         string = `((\/|\?|#)[^\s]*)`
-	URLPort         string = `(:(\d{1,5}))`
-	URLIP           string = `([1-9]\d?|1\d\d|2[01]\d|22[0-3]|24\d|25[0-5])(\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])){2}(?:\.([0-9]\d?|1\d\d|2[0-4]\d|25[0-5]))`
-	URLSubdomain    string = `((www\.)|([a-zA-Z0-9]+([-_\.]?[a-zA-Z0-9])*[a-zA-Z0-9]\.[a-zA-Z0-9]+))`
-	URL                    = `^` + URLSchema + `?` + URLUsername + `?` + `((` + URLIP + `|(\[` + IP + `\])|(([a-zA-Z0-9]([a-zA-Z0-9-_]+)?[a-zA-Z0-9]([-\.][a-zA-Z0-9]+)*)|(` + URLSubdomain + `?))?(([a-zA-Z\x{00a1}-\x{ffff}0-9]+-?-?)*[a-zA-Z\x{00a1}-\x{ffff}0-9]+)(?:\.([a-zA-Z\x{00a1}-\x{ffff}]{1,}))?))\.?` + URLPort + `?` + URLPath + `?$`
+	ip              string = `(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))`
+	urlSchema       string = `((ftp|https?):\/\/)`
+	urlUsername     string = `(\S+(:\S*)?@)`
+	urlPath         string = `((\/|\?|#)[^\s]*)`
+	urlPort         string = `(:(\d{1,5}))`
+	urlIP           string = `([1-9]\d?|1\d\d|2[01]\d|22[0-3]|24\d|25[0-5])(\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])){2}(?:\.([0-9]\d?|1\d\d|2[0-4]\d|25[0-5]))`
+	urlSubdomain    string = `((www\.)|([a-zA-Z0-9]+([-_\.]?[a-zA-Z0-9])*[a-zA-Z0-9]\.[a-zA-Z0-9]+))`
+	urlString              = `^` + urlSchema + `?` + urlUsername + `?` + `((` + urlIP + `|(\[` + ip + `\])|(([a-zA-Z0-9]([a-zA-Z0-9-_]+)?[a-zA-Z0-9]([-\.][a-zA-Z0-9]+)*)|(` + urlSubdomain + `?))?(([a-zA-Z\x{00a1}-\x{ffff}0-9]+-?-?)*[a-zA-Z\x{00a1}-\x{ffff}0-9]+)(?:\.([a-zA-Z\x{00a1}-\x{ffff}]{1,}))?))\.?` + urlPort + `?` + urlPath + `?$`
 	maxURLRuneCount        = 2083
 	minURLRuneCount        = 3
 )
 
 var (
-	rxURL = regexp.MustCompile(URL)
+	rxURL = regexp.MustCompile(urlString)
 )
 
-//fixme: Improve log messages. Say repo not provided if len(repo) == 0
-func CloneRepos(terraform_repo string, ansible_repo string, homedir string) {
+/*
+CloneRepos: Clones repos if URLs provided are valid
+Also makes sure that the repo is not already
+cloned by checking the current dir for folder
+whose name matches the repo name
+*/
+func CloneRepos(terraformRepo string, ansibleRepo string, homedir string) {
 	var wg sync.WaitGroup
-	_, terraform_exists := os.Stat(FormatRepo(terraform_repo))
-	_, ansible_exists := os.Stat(FormatRepo(ansible_repo))
-	if terraform_exists != nil && len(terraform_repo) > 0 {
+	_, terraformExists := os.Stat(FormatRepo(terraformRepo))
+	_, ansibleExists := os.Stat(FormatRepo(ansibleRepo))
+	if terraformExists != nil && len(terraformRepo) > 0 {
 		wg.Add(1)
-		go clone_template_repos(terraform_repo, &wg)
+		go cloneTemplateRepos(terraformRepo, &wg)
 	} else {
 		ColorPrint(WARN, "Terraform template repo is already cloned!")
 
 	}
-	if ansible_exists != nil && len(ansible_repo) > 0 {
+	if ansibleExists != nil && len(ansibleRepo) > 0 {
 		wg.Add(1)
-		go clone_template_repos(ansible_repo, &wg)
+		go cloneTemplateRepos(ansibleRepo, &wg)
 	} else {
 		ColorPrint(WARN, "Ansible template repo is already cloned!")
 	}
 	wg.Wait()
 }
 
+//FormatRepo: Returns folder name for a given URL
 func FormatRepo(repo string) string {
 	repo = repo[strings.LastIndex(repo, "/")+1:]
 	return strings.Replace(repo, ".git", "", -1) + "/"
 }
 
-func clone_template_repos(path string, wg *sync.WaitGroup) {
+func cloneTemplateRepos(path string, wg *sync.WaitGroup) {
 	cmd0 := "git"
 	cmd1 := "clone"
 	cmd := exec.Command(cmd0, cmd1, path)
@@ -68,7 +74,7 @@ func clone_template_repos(path string, wg *sync.WaitGroup) {
 	defer wg.Done()
 }
 
-//Function from asaskevich/govalidator
+//IsURL: Function from asaskevich/govalidator
 func IsURL(str string) bool {
 	if str == "" || utf8.RuneCountInString(str) >= maxURLRuneCount || len(str) <= minURLRuneCount || strings.HasPrefix(str, ".") {
 		return false

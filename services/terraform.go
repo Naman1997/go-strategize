@@ -5,7 +5,13 @@ import (
 	"os/exec"
 )
 
-func Terraform_init(path string) {
+/*
+TerraformInit: Executes terraform init on the path using
+the -chdir option for terraform apply
+Expects terraform binary to be present
+in PATH
+*/
+func TerraformInit(path string) {
 	cmd0 := "terraform"
 	cmd1 := "-chdir=" + path
 	cmd2 := "init"
@@ -21,7 +27,13 @@ func Terraform_init(path string) {
 	ColorPrint(INFO, "Finished executing terraform init")
 }
 
-func Terraform_apply(path string) {
+/*
+TerraformApply: Executes terraform apply on the path using
+the -chdir option for terraform apply
+Expects terraform binary to be present
+in PATH
+*/
+func TerraformApply(path string) {
 	cmd0 := "terraform"
 	cmd1 := "-chdir=" + path
 	cmd2 := "apply"

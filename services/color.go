@@ -15,6 +15,12 @@ const (
 	INFO  = "[INFO] "
 )
 
+/*
+ColorPrint: Formats and prints the text according
+to the colorText provided. Other options are
+passed over to fmt.Printf to process and
+format correctly.
+*/
 func ColorPrint(colorText string, text string, option ...interface{}) {
 	if colorText == ERROR {
 		fmt.Printf(color.RedString(colorText)+text, option...)
@@ -38,6 +44,10 @@ func ColorPrint(colorText string, text string, option ...interface{}) {
 	}
 }
 
+/*
+Help: Prints out the help message for
+go-stratergize
+*/
 func Help() {
 	helpText := `
 Usage: go-stratergize [options] [<arguments>]
@@ -56,26 +66,19 @@ Template Options:
 			> 'https://github.com/Naman1997/cluster-management'
 
 Terraform Options:
-  -terraform=URL        URL for your terraform repo. It's assumed that main.tf is
-			in the root of this repo.
-  -var-file=path        Path to terraform.tfvars that will be used with
-			'terraform apply'.
+  -terraform=URL        URL for your terraform repo.
+  -var-file=path        Path to optional terraform.tfvars.
 
 Ansible Options:
   -ansible=URL          URL for your ansible repo.
   -inventory=path       Expected relative path of inventory file to repo folder.
-  			This can be created after execution of terraform apply.
 			(default = /etc/ansible/hosts)
-  -ansible-req=path     Expected path to requirements.yaml file. This is mandatory
-			if you're populating '-ansible' flag.
+  -ansible-req=path     Expected path to requirements.yaml file.
   -ansible-play=path    Expected relative path of playbooks dir to repo folder.
-			This is mandatory if you're populating '-ansible' flag.
-  -ansible-var=path     Expected path of your vars.json file. This is mandatory
-			if you're populating '-ansible' flag.
+  -ansible-var=path     Expected path of your vars.json file.
 
 SSH Options:
-  -ssh-user             Name of user that will be used for SSH and ansible playbooks.
-			(default = root)
+  -ssh-user             Username used for SSH and ansible (default = root)
   -ssh-key              Private key for SSH. (default = ~/.ssh/id_rsa)
   -strict=false         Do not ask for host verification. (default = true)
 

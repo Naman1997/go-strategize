@@ -6,7 +6,13 @@ import (
 	"strings"
 )
 
-func Ansible_galaxy(requirements string) {
+/*
+AnsibleGalaxy: Executes ansible-galaxy collection install
+using the requirements filepath passed
+Expects ansible binary to be present
+in PATH
+*/
+func AnsibleGalaxy(requirements string) {
 	cmd0 := "ansible-galaxy"
 	cmd1 := "collection"
 	cmd2 := "install"
@@ -24,7 +30,13 @@ func Ansible_galaxy(requirements string) {
 	ColorPrint(INFO, "Finished installing ansible requirements")
 }
 
-func Ansible_playbook(playbook string, inventory string, vars string, user string) {
+/*
+AnsiblePlaybook: Executes ansible-playbook
+using the playbook filepath passed
+Expects ansible binary to be present
+in PATH
+*/
+func AnsiblePlaybook(playbook string, inventory string, vars string, user string) {
 	cmd0 := "ansible-playbook"
 	cmd1 := playbook
 	cmd2 := "-i"

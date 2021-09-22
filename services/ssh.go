@@ -11,13 +11,18 @@ import (
 	kh "golang.org/x/crypto/ssh/knownhosts"
 )
 
-type Connection struct {
+type connection struct {
 	*ssh.Client
 }
 
+/*
+ValidateConn: Validates all SSH connections. Does the following:
+> Connect to all VMs with known_hosts for callback
+> Tries to execute : 'echo 'Connected to' `hostname`' on VMs
+*/
 func ValidateConn(username string, privateKey string, homedir string, addr string, port string, strict bool) {
 	privateKey = HomeFix(privateKey, homedir)
-	conn, err := connectInsecure(username, privateKey, homedir, addr, port, strict)
+	conn, err := connectSecure(username, privateKey, homedir, addr, port, strict)
 	if err != nil {
 		ColorPrint(ERROR, "[SSH Failure] %v", err)
 	}
@@ -29,7 +34,7 @@ func ValidateConn(username string, privateKey string, homedir string, addr strin
 	ColorPrint(INFO, strings.TrimSuffix(string(output), "\n"))
 }
 
-func connectInsecure(username string, privateKey string, homedir string, addr string, port string, strict bool) (*Connection, error) {
+func connectSecure(username string, privateKey string, homedir string, addr string, port string, strict bool) (*connection, error) {
 	key, err := ioutil.ReadFile(privateKey)
 	if err != nil {
 		ColorPrint(ERROR, "%v", err)
@@ -64,11 +69,11 @@ func connectInsecure(username string, privateKey string, homedir string, addr st
 		return nil, err
 	}
 
-	return &Connection{conn}, nil
+	return &connection{conn}, nil
 
 }
 
-func (conn *Connection) sendCommands(cmds ...string) ([]byte, error) {
+func (conn *connection) sendCommands(cmds ...string) ([]byte, error) {
 	session, err := conn.NewSession()
 	if err != nil {
 		ColorPrint(ERROR, "%v", err)
