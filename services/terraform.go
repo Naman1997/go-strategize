@@ -1,8 +1,6 @@
 package services
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"os/exec"
 )
@@ -17,10 +15,10 @@ func Terraform_init(path string, dir string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		ColorPrint(ERROR, "%v", err)
 	}
 
-	fmt.Println("[INFO] Finished executing terraform init")
+	ColorPrint(INFO, "Finished executing terraform init")
 }
 
 func Terraform_apply(path string, dir string) {
@@ -34,8 +32,8 @@ func Terraform_apply(path string, dir string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		ColorPrint(ERROR, "%v", err)
 	}
 
-	fmt.Println("[INFO] Finished executing terraform apply")
+	ColorPrint(INFO, "Finished executing terraform apply")
 }

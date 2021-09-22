@@ -3,7 +3,6 @@ package services
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,9 +11,17 @@ import (
 func Exists(path string, homedir string) bool {
 	_, err := os.Stat(path)
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		ColorPrint(ERROR, "%v", err)
 	}
 	return true
+}
+
+func ExistsFolderNoErr(path string, homedir string) bool {
+	f, err := os.Stat(path)
+	if err == nil && f.IsDir() {
+		return true
+	}
+	return false
 }
 
 func HomeFix(path string, homedir string) string {
@@ -64,10 +71,6 @@ func ReadFiles(searchDir string) ([]string, error) {
 
 	if e != nil {
 		panic(e)
-	}
-
-	for _, file := range fileList {
-		fmt.Println(file)
 	}
 
 	return fileList, nil

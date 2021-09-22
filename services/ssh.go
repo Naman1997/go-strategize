@@ -6,7 +6,6 @@ import (
 	"os/exec"
 
 	"io/ioutil"
-	"log"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
@@ -21,26 +20,26 @@ func ValidateConn(username string, privateKey string, homedir string, addr strin
 	privateKey = HomeFix(privateKey, homedir)
 	conn, err := connectInsecure(username, privateKey, homedir, addr, port, strict)
 	if err != nil {
-		log.Fatalf("[ERROR] [SSH Failure] %v", err)
+		ColorPrint(ERROR, "[SSH Failure] %v", err)
 	}
-	output, err := conn.sendCommands("echo '[INFO] Connected to' `hostname`")
+	output, err := conn.sendCommands("echo 'Connected to' `hostname`")
 	if err != nil {
-		log.Fatalf("[ERROR] [SSH Failure] [%s] %v", addr, err)
+		ColorPrint(ERROR, "[SSH Failure] [%s] %v", addr, err)
 	}
 	defer conn.Close()
-	fmt.Println(strings.TrimSuffix(string(output), "\n"))
+	ColorPrint(INFO, strings.TrimSuffix(string(output), "\n"))
 }
 
 func connectInsecure(username string, privateKey string, homedir string, addr string, port string, strict bool) (*Connection, error) {
 	key, err := ioutil.ReadFile(privateKey)
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		ColorPrint(ERROR, "%v", err)
 	}
 
 	// Create the Signer for this private key.
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		ColorPrint(ERROR, "%v", err)
 	}
 
 	//Add fingerprint to known_hosts and copy SSH key
@@ -50,7 +49,7 @@ func connectInsecure(username string, privateKey string, homedir string, addr st
 	path = HomeFix(path, homedir)
 	hostKeyCallback, err := kh.New(path)
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		ColorPrint(ERROR, "%v", err)
 	}
 
 	sshConfig := &ssh.ClientConfig{
@@ -73,7 +72,7 @@ func connectInsecure(username string, privateKey string, homedir string, addr st
 func (conn *Connection) sendCommands(cmds ...string) ([]byte, error) {
 	session, err := conn.NewSession()
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		ColorPrint(ERROR, "%v", err)
 	}
 	defer session.Close()
 
@@ -114,7 +113,7 @@ func copySSHKey(user string, addr string, port string, key string, strict bool) 
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 		if err != nil {
-			log.Fatalf("[ERROR] [ssh-copy-id] %v", err)
+			ColorPrint(ERROR, "[ssh-copy-id] %v", err)
 		}
 	} else {
 		cmd := exec.Command(cmd0, cmd1, cmd2, cmd3, cmd4, cmd5)
@@ -123,9 +122,9 @@ func copySSHKey(user string, addr string, port string, key string, strict bool) 
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 		if err != nil {
-			log.Fatalf("[ERROR] [ssh-copy-id] %v", err)
+			ColorPrint(ERROR, "[ssh-copy-id] %v", err)
 		}
 	}
 
-	fmt.Println("[INFO] Finished executing ssh-copy-id", addr)
+	ColorPrint(INFO, "[INFO] Finished executing ssh-copy-id "+addr)
 }

@@ -3,11 +3,10 @@ package main
 import (
 	"bufio"
 	"flag"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/user"
+	"path/filepath"
 	"strings"
 
 	"github.com/Naman1997/go-stratergize/services"
@@ -15,19 +14,17 @@ import (
 )
 
 var (
-	template bool   = false
-	clone    bool   = true
-	response string = "N"
-	strict   bool   = true
+	template           bool   = false
+	strict             bool   = true
+	template_ansible   string = "cluster-management"
+	template_terraform string = "proxmox-terraform-template-k8s"
 )
 
 const (
 	base                          string = "https://github.com/Naman1997/"
-	template_terraform            string = "proxmox-terraform-template-k8s"
-	template_ansible              string = "cluster-management"
-	inventory_template_path       string = "/proxmox-terraform-template-k8s/ansible/hosts"
+	inventory_template_path       string = "ansible/hosts"
 	ansible_template_requirements string = "requirements.yaml"
-	ansible_template_playbooks    string = "playbooks/"
+	ansible_template_playbooks    string = "/playbooks/"
 	ansible_template_vars         string = "playbooks/vars.json"
 	default_ansible_inventory     string = "/etc/ansible/hosts"
 )
@@ -37,29 +34,33 @@ func main() {
 	//Get home dir
 	usr, err := user.Current()
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		services.ColorPrint(services.ERROR, "%v", err)
 	}
 	homedir := usr.HomeDir
 
 	//Get working dir
 	dir, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		services.ColorPrint(services.ERROR, "%v", err)
+	}
+
+	flag.Usage = func() {
+		services.Help()
+		os.Exit(0)
 	}
 
 	//Get flag inputs
-	terraform_vars_file_flag := flag.String("var-file", "", "Path to .tfvars file")
-	terraform_repo_flag := flag.String("terraform", "", "URL to your terraform repo")
-	ansible_repo_flag := flag.String("ansible", "", "URL to your ansible repo")
-	inventory_flag := flag.String("inventory", default_ansible_inventory, "Expected path of your ansible inventory file")
-	ssh_username_flag := flag.String("ssh-user", "root", "Username for SSH")
-	ssh_key_flag := flag.String("ssh-key", "~/.ssh/id_rsa", "Private key for SSH")
-	ssh_strict_flag := flag.Bool("strict", true, "Private key for SSH")
-	ansible_requirements_flag := flag.String("ansible-req", "", "Requirements file for ansible")
-	ansible_playbooks_flag := flag.String("ansible-play", "", "Expected path of your ansible playbooks dir")
-	ansible_vars_flag := flag.String("ansible-var", "", "Expected path of your ansible vars file")
-
-	//go run . --var-file ~/proxmox-terraform-template-k8s/terraform.tfvars --ssh-user naman --strict=false --ansible-req cluster-management/requirements.yaml --ansible-play cluster-management/playbooks --ansible-var cluster-management/playbooks/vars.json
+	terraform_vars_file_flag := flag.String("var-file", "", "")
+	terraform_repo_flag := flag.String("terraform", "", "")
+	ansible_repo_flag := flag.String("ansible", "", "")
+	inventory_flag := flag.String("inventory", default_ansible_inventory, "")
+	ssh_username_flag := flag.String("ssh-user", "root", "")
+	ssh_key_flag := flag.String("ssh-key", "~/.ssh/id_rsa", "")
+	ssh_strict_flag := flag.Bool("strict", true, "")
+	ansible_requirements_flag := flag.String("ansible-req", "", "")
+	ansible_playbooks_flag := flag.String("ansible-play", "", "")
+	ansible_vars_flag := flag.String("ansible-var", "", "")
+	proxmox_k8s_flag := flag.Bool("proxmox-k8s", false, "")
 
 	//Extract flag data
 	flag.Parse()
@@ -73,24 +74,26 @@ func main() {
 	ansible_requirements := *ansible_requirements_flag
 	ansible_playbooks := *ansible_playbooks_flag
 	ansible_vars := *ansible_vars_flag
+	template := *proxmox_k8s_flag
 
-	//Update clone flag if any of these flags are passed
-	if len(terraform_repo) > 0 || len(ansible_repo) > 0 || (len(inventory_file) > 0 && inventory_file != default_ansible_inventory) {
-		clone = false
-		fmt.Println("[WARN] Not using templates for current execution")
+	args := flag.Args()
+	for _, s := range args {
+		if s == "help" {
+			services.Help()
+			os.Exit(0)
+		} else if s == "version" {
+			services.ColorPrint("", "go-stratergize v1.0")
+			os.Exit(0)
+		}
 	}
 
-	//Check for template repos usage
-	if clone {
-		input := templateCheck()
-		for !strings.EqualFold(input.Text(), "Y") && !strings.EqualFold(input.Text(), "N") {
-			input = templateCheck()
-		}
-		response = input.Text()
+	//Update clone flag if any of these flags are passed
+	if template && (len(terraform_repo) > 0 || len(ansible_repo) > 0) {
+		services.ColorPrint(services.ERROR, "Ansible/Terraform repos cannot be provided when using a template")
 	}
 
 	//Clone terraform and ansible repos
-	if strings.EqualFold(response, "Y") {
+	if template {
 		template = true
 		terraform_repo = base + template_terraform
 		ansible_repo = base + template_ansible
@@ -98,83 +101,114 @@ func main() {
 		ansible_playbooks = ansible_template_playbooks
 		ansible_vars = ansible_template_vars
 		services.CloneRepos(terraform_repo, ansible_repo, homedir)
-	} else if strings.EqualFold(response, "N") {
+	} else {
 
 		//Make sure both repos are present
 		if len(terraform_repo) == 0 {
 			terraform_repo = askRepoUrl("terraform")
+		} else if !services.IsURL(terraform_repo) {
+			services.ColorPrint(services.ERROR, "Invalid URL for terraform repo")
 		}
 		if len(ansible_repo) == 0 {
 			ansible_repo = askRepoUrl("ansible")
+		} else if !services.IsURL(ansible_repo) {
+			services.ColorPrint(services.ERROR, "Invalid URL for ansible repo")
 		}
 
 		services.CloneRepos(terraform_repo, ansible_repo, homedir)
 	}
 
+	//Update repo names
+	if !template {
+		template_ansible = services.FormatRepo(ansible_repo)
+		template_terraform = services.FormatRepo(terraform_repo)
+	}
+
 	//Copy over .tfvars file if specified
-	newfile := services.FormatRepo(terraform_repo) + "terraform.tfvars"
+	newfile := filepath.Join(dir, template_terraform, "terraform.tfvars")
 	if len(terraform_vars_file) > 0 {
 		_, tfvars_exists := os.Stat(newfile)
 		if tfvars_exists != nil {
 			terraform_vars_file = services.Validate(terraform_vars_file, homedir)
 			bytes, err := services.Copy(terraform_vars_file, newfile)
 			if err != nil {
-				log.Fatalf("[ERROR] %v", err)
+				services.ColorPrint(services.ERROR, "%v", err)
 			}
-			m := fmt.Sprintf("[INFO] Copied %d bytes to "+newfile, bytes)
-			fmt.Println(m)
+			services.ColorPrint(services.INFO, "Copied %d bytes to "+newfile, bytes)
 		} else {
-			fmt.Println("[SKIP] tfvars have already been copied!")
+			services.ColorPrint(services.WARN, "tfvars have already been copied!")
 		}
 	}
 
 	//Validate ansible requirements file
 	if len(ansible_requirements) > 0 {
-		ansible_requirements = services.Validate(dir+"/"+template_ansible+"/"+ansible_requirements, homedir)
+		ansible_requirements = services.Validate(filepath.Join(dir, template_ansible, ansible_requirements), homedir)
+	} else {
+		services.ColorPrint(services.WARN, "Ansible requirements file was not provided. Will not execute ansible galaxy collection install.")
 	}
 
 	//Validate ansible vars file
 	if len(ansible_vars) > 0 {
-		ansible_vars = services.Validate(dir+"/"+template_ansible+"/"+ansible_vars, homedir)
+		ansible_vars = services.Validate(filepath.Join(dir, template_ansible, ansible_vars), homedir)
+	} else {
+		services.ColorPrint(services.WARN, "Ansible vars file was not provided.")
+	}
+
+	//Validate ansible inventory has been passed
+	if len(inventory_file) == 0 {
+		services.ColorPrint(services.ERROR, "Inventory path cannot be empty")
+	} else if inventory_file == default_ansible_inventory && !template {
+		services.ColorPrint(services.WARN, "Using /etc/ansible/hosts as the default inventory")
 	}
 
 	//Validate ansible playbooks exists
-	if len(ansible_playbooks) > 0 {
-		ansible_playbooks = strings.TrimPrefix(ansible_playbooks, "/")
-		if strings.Contains(ansible_playbooks, "~/") {
-			ansible_playbooks = services.Validate(ansible_playbooks, homedir)
-		} else {
-			ansible_playbooks = dir + "/" + template_ansible + "/" + ansible_playbooks
-			_ = services.Exists(ansible_playbooks, homedir)
-		}
-		ansible_playbooks = strings.TrimSuffix(ansible_playbooks, "/") + "/"
+	if len(ansible_playbooks) == 0 {
+		services.ColorPrint(services.ERROR, "Relative Folder path not provided for ansible playbooks")
+	}
+	ansible_playbooks = strings.TrimPrefix(ansible_playbooks, "/")
+	if strings.Contains(ansible_playbooks, "~/") {
+		ansible_playbooks = services.Validate(ansible_playbooks, homedir)
 	} else {
-		log.Fatalf("[ERROR] No such file or directory: %v", ansible_playbooks)
+		ansible_playbooks = filepath.Join(dir, template_ansible, ansible_playbooks)
+		_ = services.Exists(ansible_playbooks, homedir)
+	}
+	ansible_playbooks = strings.TrimSuffix(ansible_playbooks, "/") + "/"
+
+	//Validate at least one yaml file is available in the dir
+	files, err := ioutil.ReadDir(ansible_playbooks)
+	if err != nil {
+		services.ColorPrint(services.ERROR, "%v", err)
+	}
+	yamlPresent := false
+	for _, yaml := range files {
+		if strings.Contains(yaml.Name(), ".yaml") || strings.Contains(yaml.Name(), ".yml") {
+			yamlPresent = true
+		}
+	}
+	if !yamlPresent {
+		services.ColorPrint(services.ERROR, "No yaml files found in path: "+ansible_playbooks)
 	}
 
 	// Initialize and apply with terraform
-	if template {
-		folder := services.FormatRepo(terraform_repo)
-		services.Terraform_init(folder, dir)
-		services.Terraform_apply(folder, dir)
-	}
+	services.Terraform_init(template_terraform, dir)
+	services.Terraform_apply(template_terraform, dir)
 
 	//Validate ansible inventory
 	if template {
-		inventory_file = services.Validate(dir+inventory_template_path, homedir)
+		inventory_file = services.Validate(filepath.Join(dir, template_terraform, inventory_template_path), homedir)
 	} else {
-		inventory_file = services.Validate(inventory_file, homedir)
+		inventory_file = services.Validate(filepath.Join(dir, template_terraform, inventory_file), homedir)
 	}
 
 	// Parse the inventory
 	file, err := os.Open(inventory_file)
 	if err != nil {
-		log.Fatalf("[ERROR] %v", err)
+		services.ColorPrint(services.ERROR, "%v", err)
 	}
 	inventoryReader := bufio.NewReader(file)
 	inventory, err := aini.Parse(inventoryReader)
 	if err != nil {
-		log.Fatalf("[ERROR] [Ansible inventory] %v", err)
+		services.ColorPrint(services.ERROR, "%v", err)
 	}
 
 	//Attempt to SSH into all VMs
@@ -182,38 +216,36 @@ func main() {
 		services.ValidateConn(ssh_username, ssh_key, homedir, h.Vars["ansible_host"], h.Vars["ansible_port"], strict)
 	}
 
-	//Execute all ansible playbooks in the provided folder
-	services.Ansible_galaxy(ansible_requirements)
-	files, err := ioutil.ReadDir(ansible_playbooks)
-	if err != nil {
-		log.Fatal(err)
+	//Execute all ansible galaxy collect if requirements file is present
+	if len(ansible_requirements) > 0 {
+		services.Ansible_galaxy(ansible_requirements)
 	}
 
+	//Execute all ansible playbooks in the provided folder
 	for _, file := range files {
 		if strings.Contains(file.Name(), ".yaml") || strings.Contains(file.Name(), ".yml") {
 			services.Ansible_playbook(ansible_playbooks+file.Name(), inventory_file, ansible_vars, ssh_username)
+			services.ColorPrint(services.INFO, "Executing ansible playbook: %s", file.Name())
 		}
 	}
-	fmt.Println("[INFO] Finished executing ansible playbook(s)")
+	services.ColorPrint(services.INFO, "Finished executing ansible playbook(s)")
 
 	//Finish execution
-	fmt.Println("[INFO] Execution completed for template!")
-}
-
-func templateCheck() *bufio.Scanner {
-	fmt.Print("[INPUT] Clone and execute default proxmox template?[y/N] ")
-	input := bufio.NewScanner(os.Stdin)
-	input.Scan()
-	return input
+	services.ColorPrint(services.INFO, "Execution completed for template!")
 }
 
 func askRepoUrl(repotype string) string {
-	fmt.Print("[INPUT] What's your " + repotype + " repo URL? ")
+	services.ColorPrint(services.INPUT, "What's your "+repotype+" repo URL? ")
 	input := bufio.NewScanner(os.Stdin)
 	input.Scan()
 	response := input.Text()
 	if !services.IsURL(response) {
-		log.Fatal("[ERROR] [Invalid value for", repotype, "repo] ")
+		services.ColorPrint(services.ERROR, "Invalid URL for "+repotype+" repo")
 	}
 	return response
 }
+
+/*
+go run . --var-file ~/proxmox-terraform-template-k8s/terraform.tfvars --ssh-user naman --strict=false --ansible=https://github.com/Naman1997/cluster-management --terraform=https://github.com/Naman1997/proxmox-terraform-template-k8s --ansible-play=playbooks/ --inventory=ansible/hosts --ansible-var=playbooks/vars.json
+go run . --var-file ~/proxmox-terraform-template-k8s/terraform.tfvars --ssh-user naman --proxmox-k8s=true
+*/

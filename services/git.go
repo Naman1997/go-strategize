@@ -1,8 +1,6 @@
 package services
 
 import (
-	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -38,13 +36,14 @@ func CloneRepos(terraform_repo string, ansible_repo string, homedir string) {
 		wg.Add(1)
 		go clone_template_repos(terraform_repo, &wg)
 	} else {
-		fmt.Println("[SKIP] Terraform template repo is already cloned!")
+		ColorPrint(WARN, "Terraform template repo is already cloned!")
+
 	}
 	if ansible_exists != nil && len(ansible_repo) > 0 {
 		wg.Add(1)
 		go clone_template_repos(ansible_repo, &wg)
 	} else {
-		fmt.Println("[SKIP] Ansible template repo is already cloned!")
+		ColorPrint(WARN, "Ansible template repo is already cloned!")
 	}
 	wg.Wait()
 }
@@ -62,10 +61,10 @@ func clone_template_repos(path string, wg *sync.WaitGroup) {
 
 	if err != nil {
 		defer wg.Done()
-		log.Fatalf("[ERROR] %v", err)
+		ColorPrint(ERROR, "%v", err)
 	}
 
-	fmt.Println("[INFO] Finished cloning", path)
+	ColorPrint(INFO, "Finished cloning "+path)
 	defer wg.Done()
 }
 
