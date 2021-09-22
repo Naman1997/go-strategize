@@ -16,7 +16,7 @@ type connection struct {
 }
 
 /*
-ValidateConn: Validates all SSH connections. Does the following:
+ValidateConn validates all SSH connections. Does the following:
 > Connect to all VMs with known_hosts for callback
 > Tries to execute : 'echo 'Connected to' `hostname`' on VMs
 */

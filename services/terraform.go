@@ -6,7 +6,7 @@ import (
 )
 
 /*
-TerraformInit: Executes terraform init on the path using
+TerraformInit executes terraform init on the path using
 the -chdir option for terraform apply
 Expects terraform binary to be present
 in PATH
@@ -28,7 +28,7 @@ func TerraformInit(path string) {
 }
 
 /*
-TerraformApply: Executes terraform apply on the path using
+TerraformApply executes terraform apply on the path using
 the -chdir option for terraform apply
 Expects terraform binary to be present
 in PATH

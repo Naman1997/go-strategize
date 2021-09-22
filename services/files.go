@@ -9,7 +9,7 @@ import (
 )
 
 /*
-Exists: Checks if path provided exists or not.
+Exists checks if path provided exists or not.
 Exits with an error if not.
 */
 func Exists(path string, homedir string) bool {
@@ -20,7 +20,7 @@ func Exists(path string, homedir string) bool {
 	return true
 }
 
-//ExistsFolderNoErr: Checks if path provided is a folder or not.
+//ExistsFolderNoErr checks if path provided is a folder or not.
 func ExistsFolderNoErr(path string, homedir string) bool {
 	f, err := os.Stat(path)
 	if err == nil && f.IsDir() {
@@ -29,7 +29,7 @@ func ExistsFolderNoErr(path string, homedir string) bool {
 	return false
 }
 
-//HomeFix: Resolves home-relative path to absolute path
+//HomeFix resolves home-relative path to absolute path
 func HomeFix(path string, homedir string) string {
 	if strings.Contains(path, "~/") {
 		path = filepath.Join(homedir, path[2:])
@@ -37,7 +37,7 @@ func HomeFix(path string, homedir string) string {
 	return path
 }
 
-//Copy: Copies data from src to dst path
+//Copy copies data from src to dst path
 func Copy(src, dst string) (int64, error) {
 	sourceFileStat, err := os.Stat(src)
 	if err != nil {
@@ -64,7 +64,7 @@ func Copy(src, dst string) (int64, error) {
 }
 
 /*
-Validate: Validates if a relative path exists or not.
+Validate checks if a relative path exists or not.
 Returns absolute path if its relative to home dir.
 Exits with status 1 if path not found
 */
@@ -75,7 +75,7 @@ func Validate(path string, homedir string) string {
 }
 
 /*
-ReadFiles: Walks through all filepaths in a given dir.
+ReadFiles walks through all filepaths in a given dir.
 Returns a list of filepaths if successful
 Exists with an error otherwise
 */
