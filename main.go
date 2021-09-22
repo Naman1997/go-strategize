@@ -190,8 +190,9 @@ func main() {
 	}
 
 	// Initialize and apply with terraform
-	services.Terraform_init(template_terraform, dir)
-	services.Terraform_apply(template_terraform, dir)
+	terraform_dir := filepath.Join(dir, template_terraform)
+	services.Terraform_init(terraform_dir)
+	services.Terraform_apply(terraform_dir)
 
 	//Validate ansible inventory
 	if template {

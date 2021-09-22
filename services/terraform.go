@@ -5,9 +5,9 @@ import (
 	"os/exec"
 )
 
-func Terraform_init(path string, dir string) {
+func Terraform_init(path string) {
 	cmd0 := "terraform"
-	cmd1 := "-chdir=" + dir + "/" + path
+	cmd1 := "-chdir=" + path
 	cmd2 := "init"
 	cmd := exec.Command(cmd0, cmd1, cmd2)
 	cmd.Stdin = os.Stdin
@@ -21,9 +21,9 @@ func Terraform_init(path string, dir string) {
 	ColorPrint(INFO, "Finished executing terraform init")
 }
 
-func Terraform_apply(path string, dir string) {
+func Terraform_apply(path string) {
 	cmd0 := "terraform"
-	cmd1 := "-chdir=" + dir + "/" + path
+	cmd1 := "-chdir=" + path
 	cmd2 := "apply"
 	cmd3 := "-auto-approve"
 	cmd := exec.Command(cmd0, cmd1, cmd2, cmd3)

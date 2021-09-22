@@ -2,10 +2,9 @@ package services
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
-
-	"io/ioutil"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
