@@ -16,6 +16,14 @@ func Exists(path string, homedir string) bool {
 	return true
 }
 
+func ExistsFolderNoErr(path string, homedir string) bool {
+	f, err := os.Stat(path)
+	if err == nil && f.IsDir() {
+		return true
+	}
+	return false
+}
+
 func HomeFix(path string, homedir string) string {
 	if strings.Contains(path, "~/") {
 		path = filepath.Join(homedir, path[2:])
