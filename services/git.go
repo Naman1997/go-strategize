@@ -28,7 +28,8 @@ var (
 )
 
 /*
-CloneRepos: Clones repos if URLs provided are valid
+
+CloneRepos clones repos if URLs provided are valid
 Also makes sure that the repo is not already
 cloned by checking the current dir for folder
 whose name matches the repo name
@@ -53,7 +54,7 @@ func CloneRepos(terraformRepo string, ansibleRepo string, homedir string) {
 	wg.Wait()
 }
 
-//FormatRepo: Returns folder name for a given URL
+//FormatRepo returns folder name for a given URL
 func FormatRepo(repo string) string {
 	repo = repo[strings.LastIndex(repo, "/")+1:]
 	return strings.Replace(repo, ".git", "", -1) + "/"
@@ -74,7 +75,10 @@ func cloneTemplateRepos(path string, wg *sync.WaitGroup) {
 	defer wg.Done()
 }
 
-//IsURL: Function from asaskevich/govalidator
+/*
+IsURL checks if the provided URL is valid
+function from asaskevich/govalidator
+*/
 func IsURL(str string) bool {
 	if str == "" || utf8.RuneCountInString(str) >= maxURLRuneCount || len(str) <= minURLRuneCount || strings.HasPrefix(str, ".") {
 		return false

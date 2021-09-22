@@ -8,6 +8,12 @@ import (
 	"github.com/fatih/color"
 )
 
+/*
+ERROR const => red
+WARN const => yellow
+INPUT const => blue
+INFO const => green
+*/
 const (
 	ERROR = "[ERROR] "
 	WARN  = "[WARNING] "
@@ -16,7 +22,7 @@ const (
 )
 
 /*
-ColorPrint: Formats and prints the text according
+ColorPrint formats and prints the text according
 to the colorText provided. Other options are
 passed over to fmt.Printf to process and
 format correctly.
@@ -45,7 +51,7 @@ func ColorPrint(colorText string, text string, option ...interface{}) {
 }
 
 /*
-Help: Prints out the help message for
+Help prints out the help message for
 go-stratergize
 */
 func Help() {

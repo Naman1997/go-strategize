@@ -7,7 +7,7 @@ import (
 )
 
 /*
-AnsibleGalaxy: Executes ansible-galaxy collection install
+AnsibleGalaxy executes ansible-galaxy collection install
 using the requirements filepath passed
 Expects ansible binary to be present
 in PATH
@@ -31,7 +31,7 @@ func AnsibleGalaxy(requirements string) {
 }
 
 /*
-AnsiblePlaybook: Executes ansible-playbook
+AnsiblePlaybook executes ansible-playbook
 using the playbook filepath passed
 Expects ansible binary to be present
 in PATH
