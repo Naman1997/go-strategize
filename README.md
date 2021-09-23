@@ -22,3 +22,28 @@ go-stratergize does the following in order:
 
 It's specially useful for people who usually have very long running ansible playbooks and need them to be running in a closed network.
 Imagine you need to provision some VMs and then install vanila k8s or whatever application on them. In a closed network you probably don't care about SSH key verification. Assuming the these two points are valid, you can utilize go-stratergize with flag '-strict=false' to skip hostname verification and go grab a cup of coffee while your infrastructure is being provisioned and configured!
+
+## Options
+
+- Template options
+    - -proxmox-k8s=true : Uses 'https://github.com/Naman1997/proxmox-terraform-template-k8s' and 'https://github.com/Naman1997/cluster-management' for creating a k8s cluster
+
+- Terraform Options:
+    - -terraform=URL : URL for your terraform repo.
+    - -var-file=path : Path to optional terraform.tfvars.
+
+- Ansible Options:
+    - -ansible=URL : URL for your ansible repo.
+    - -inventory=path : Expected relative path of inventory file to repo folder. (default = /etc/ansible/hosts)
+    - -ansible-req=path : Expected path to requirements.yaml file.
+    - -ansible-play=path : Expected relative path of playbooks dir to repo folder.
+    - -ansible-var=path : Expected path of your vars.json file.
+
+- SSH Options:
+    - -ssh-user : Username used for SSH and ansible (default = root)
+    - -ssh-key : Private key for SSH. (default = ~/.ssh/id_rsa)
+    - -strict=false : Do not ask for host verification. (default = true)
+
+- Other Options:
+    - version : Returns the version
+    - help : Prints this help section
