@@ -1,6 +1,6 @@
 # go-stratergize
 
-[![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naman1997/go-strategize/blob/main/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Naman1997/go-strategize)](https://goreportcard.com/report/github.com/Naman1997/go-strategize)
 [![Open Source Love svg1](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)
 
