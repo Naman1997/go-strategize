@@ -4,6 +4,10 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/Naman1997/go-strategize)](https://goreportcard.com/report/github.com/Naman1997/go-strategize)
 [![Open Source Love svg1](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)
 
+## Demo
+
+Check out a template execution in this YouTube [video](https://www.youtube.com/watch?v=fVtCgDwrfBU)!
+
 ## Overview
 
 go-stratergize is a simple CLI program that provisions your infrastructure using terraform and configures it using ansible. To connect the two, it assumes that you're writing the ansible inventory to a file somewhere with terraform.
