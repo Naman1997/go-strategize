@@ -52,14 +52,14 @@ func ColorPrint(colorText string, text string, option ...interface{}) {
 
 /*
 Help prints out the help message for
-go-stratergize
+go-strategize
 */
 func Help() {
 	helpText := `
-Usage: go-stratergize [options] [<arguments>]
+Usage: go-strategize [options] [<arguments>]
 
 The available commands for execution are listed below.
-go-stratergize will attempt to do the following:
+go-strategize will attempt to do the following:
 > Clone terraform & ansible repos
 > Execute terraform apply
 > Attempt to SSH in all VMs in ansible inventory

@@ -5,8 +5,10 @@
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
+# Project binaries
 *.test
+go-strategize
+
 
 # Cloned folders
 proxmox-terraform-template-k8s/

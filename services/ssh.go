@@ -102,16 +102,16 @@ func (conn *connection) sendCommands(cmds ...string) ([]byte, error) {
 
 func copySSHKey(user string, addr string, port string, key string, strict bool) {
 	cmd0 := "ssh-copy-id"
-	cmd1 := user + "@" + addr
-	cmd2 := "-i"
-	cmd3 := key
-	cmd4 := "-p"
-	cmd5 := port
+	cmd1 := "-i"
+	cmd2 := key
+	cmd3 := "-p"
+	cmd4 := port
+	host := user + "@" + addr
 
 	if !strict {
-		cmd6 := "-o"
-		cmd7 := "StrictHostKeyChecking=no"
-		cmd := exec.Command(cmd0, cmd1, cmd2, cmd3, cmd4, cmd5, cmd6, cmd7)
+		cmd5 := "-o"
+		cmd6 := "StrictHostKeyChecking=no"
+		cmd := exec.Command(cmd0, cmd1, cmd2, cmd3, cmd4, cmd5, cmd6, host)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -120,7 +120,7 @@ func copySSHKey(user string, addr string, port string, key string, strict bool) 
 			ColorPrint(ERROR, "[ssh-copy-id] %v", err)
 		}
 	} else {
-		cmd := exec.Command(cmd0, cmd1, cmd2, cmd3, cmd4, cmd5)
+		cmd := exec.Command(cmd0, cmd1, cmd2, cmd3, cmd4, host)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
