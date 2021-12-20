@@ -9,13 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Naman1997/go-stratergize/services"
+	"github.com/Naman1997/go-strategize/services"
 	"github.com/relex/aini"
 )
 
 var (
-	template          bool   = false
-	strict            bool   = true
 	templateAnsible   string = "cluster-management"
 	templateTerraform string = "proxmox-terraform-template-k8s"
 )
