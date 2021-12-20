@@ -55,7 +55,7 @@ func sendCommands(user string, addr string, port string) {
 	cmd2 := "-p"
 	cmd3 := port
 	cmd4 := "echo"
-	cmd5 := "'Connected to' $(hostname)"
+	cmd5 := "'Connected to' $(uname -n)"
 
 	cmd := exec.Command(cmd0, cmd1, cmd2, cmd3, cmd4, cmd5)
 	cmd.Stdin = os.Stdin

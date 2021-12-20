@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Naman1997/go-strategize/services"
+	services "github.com/Naman1997/go-strategize/services"
 	"github.com/relex/aini"
 )
 
@@ -243,8 +243,3 @@ func askRepoUrl(repotype string) string {
 	}
 	return response
 }
-
-/*
-go run . --var-file ~/proxmox-terraform-template-k8s/terraform.tfvars --ssh-user naman --strict=false --ansible=https://github.com/Naman1997/cluster-management --terraform=https://github.com/Naman1997/proxmox-terraform-template-k8s --ansible-play=playbooks/ --inventory=ansible/hosts --ansible-var=playbooks/vars.json
-go run . --var-file ~/proxmox-terraform-template-k8s/terraform.tfvars --ssh-user naman --proxmox-k8s=true
-*/
